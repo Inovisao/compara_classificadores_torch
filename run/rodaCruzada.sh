@@ -31,6 +31,9 @@ for((i=1;i<=$ndobras;i+=1)); do folds+=("fold_${i}"); done
 mkdir -p ../results_dl/           
 rm -rf ../results_dl/*
 
+mkdir -p ../model_checkpoints/
+rm -rf ../model_checkpoints/*
+
 echo  'run,learning_rate,architecture,optimizer,precision,recall,fscore' > ../results_dl/results.csv
 
 mkdir -p ${pastaResultados}
