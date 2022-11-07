@@ -8,7 +8,7 @@
 from arch_optim import architectures, optimizers, gradcam_layer_getters, get_architecture, get_optimizer
 import data_manager
 import helper_functions
-from hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS
+from hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
 
 import os
 import torch
@@ -51,8 +51,20 @@ def main():
     # Send the model to the correct device.
     model = model.to(device)
     print("===================================")
+    print("==> MODEL")
     print(model)
     print("===================================")
+    print("==> MODEL HYPERPARAMETERS")
+    print(MODEL_HYPERPARAMETERS)
+    print("===================================")
+    print("==> DATA HYPERPARAMETERS")
+    print(DATA_HYPERPARAMETERS)
+    print("===================================")
+    print("==> DATA AUGMENTATION")
+    print(DATA_AUGMENTATION)
+    print("===================================")
+
+
 
     # Get the optimizer.
     optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args["learning_rate"])

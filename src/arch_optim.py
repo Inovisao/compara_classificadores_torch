@@ -16,6 +16,13 @@ architectures = {
     "coat_tiny": arch.coat_tiny,
     "maxvit_rmlp_tiny_rw_256": arch.maxvit_rmlp_tiny_rw_256,
     "vgg19": arch.vgg19,
+    "lambda_resnet26rpt_256": arch.get_lambda_resnet26rpt_256,
+    "vit_relpos_base_patch32_plus_rpn_256": arch.get_vit_relpos_base_patch32_plus_rpn_256,
+    "sebotnet33ts_256": arch.get_sebotnet33ts_256,
+    "lamhalobotnet50ts_256": arch.get_lamhalobotnet50ts_256,
+    "swinv2_base_window16_256": arch.get_swinv2_base_window16_256,
+
+
 }
 
 optimizers = {
@@ -28,6 +35,12 @@ gradcam_layer_getters = {
     "coat_tiny": arch.get_coat_tiny_gradcam_layer,
     "maxvit_rmlp_tiny_rw_256": arch.get_maxvit_rmlp_tiny_rw_256_gradcam_layer,
     "vgg19": arch.get_vgg19_gradcam_layer,
+    "lambda_resnet26rpt_256": arch.get_maxvit_rmlp_tiny_rw_256_gradcam_layer,
+    "vit_relpos_base_patch32_plus_rpn_256": arch.get_vit_relpos_base_patch32_plus_rpn_256_gradcam_layer,
+    "sebotnet33ts_256": arch.get_sebotnet33ts_256_gradcam_layer,
+    "lamhalobotnet50ts_256": arch.get_lamhalobotnet50ts_256_gradcam_layer,
+    "swinv2_base_window16_256": arch.get_swinv2_base_window16_256_gradcam_layer,
+
 }
 
 

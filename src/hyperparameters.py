@@ -17,9 +17,9 @@ DATA_HYPERPARAMETERS = {
     "TEST_DATA_DIR": TEST_DATA_DIR,
     "CLASSES": CLASSES,
     "NUM_CLASSES": NUM_CLASSES,
-    "IN_CHANNELS": 5,
-    "IMAGE_SIZE": 224,
-    "BATCH_SIZE": 4,
+    "IN_CHANNELS": 3,
+    "IMAGE_SIZE": 256,
+    "BATCH_SIZE": 6,
     "USE_DATA_AUGMENTATION": True,
     "VAL_SPLIT": 0.2,
     
@@ -27,12 +27,13 @@ DATA_HYPERPARAMETERS = {
 
 # No learning rate here. The lr must be set in roda.sh.
 MODEL_HYPERPARAMETERS = {
-    "NUM_EPOCHS": 10,
+    "NUM_EPOCHS": 1000,
     "PATIENCE": 150,
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": True,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
     "CREATE_GRADCAM": False,
+    "ACCUMULATION_STEPS": 1, # 1 for no gradient accumulation.
 
 }
 

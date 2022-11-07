@@ -1,6 +1,6 @@
 # CLASSIFICADORES QUE VOCÊ QUER TESTAR
-#arqs=(alexnet coat_tiny maxvit_rmlp_tiny_rw_256 vgg19)
-arqs=(coat_tiny vgg19)
+#arqs=(alexnet coat_tiny maxvit_rmlp_tiny_rw_256 vgg19 lambda_resnet26rpt_256 vit_relpos_base_patch32_plus_rpn_256 sebotnet33ts_256 lamhalobotnet50ts_256 swinv2_base_window16_256)
+arqs=(maxvit_rmlp_tiny_rw_256 lambda_resnet26rpt_256 vit_relpos_base_patch32_plus_rpn_256 sebotnet33ts_256 lamhalobotnet50ts_256 swinv2_base_window16_256)
 
 mkdir -p ../results
 rm -rf ../results/*
@@ -12,7 +12,7 @@ mkdir -p ../results/matrix
 opt=(adam sgd)
 
 # LEARNING RATES
-learning_rates=(0.01 0.001)
+learning_rates=(0.001)
 
 cd ../src
 for lr in "${learning_rates[@]}"

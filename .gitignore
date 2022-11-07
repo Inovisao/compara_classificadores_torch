@@ -1,6 +1,7 @@
 .idea/
 .Rhistory
 src/__pycache__/
+src/Rplots.pdf
 results/
 resultsNfolds/
 data/

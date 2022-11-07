@@ -86,3 +86,98 @@ def get_coat_tiny_gradcam_layer(model):
     return model.parallel_blocks[5].factoratt_crpe4.crpe.conv_list[2]
 
 
+def get_lambda_resnet26rpt_256(in_channels, out_classes, pretrained):
+    model = timm.create_model("lambda_resnet26rpt_256", 
+                              pretrained=pretrained, 
+                              in_chans=in_channels, 
+                              num_classes=out_classes)
+    
+    return model
+
+
+def get_lambda_resnet26rpt_256_gradcam_layer(model):
+    return model.stages[3][1].conv1_1x1.conv
+
+
+def get_vit_relpos_base_patch32_plus_rpn_256(in_channels, out_classes, pretrained):
+    model = timm.create_model("vit_relpos_base_patch32_plus_rpn_256",
+                              pretrained=pretrained,
+                              in_chans=in_channels,
+                              num_classes=out_classes)
+
+    return model
+
+def get_vit_relpos_base_patch32_plus_rpn_256_gradcam_layer(model):
+    print("Gradcam not available for vit_relpos_base_patch32_plus_rpn_256.")
+
+
+def get_sebotnet33ts_256(in_channels, out_classes, pretrained):
+    model = timm.create_model("sebotnet33ts_256",
+                              pretrained=pretrained,
+                              in_chans=in_channels,
+                              num_classes=out_classes)
+    
+    return model
+
+
+def get_sebotnet33ts_256_gradcam_layer(model):
+    return model.final_conv.conv
+
+
+def get_lamhalobotnet50ts_256(in_channels, out_classes, pretrained):
+    model = timm.create_model("lamhalobotnet50ts_256",
+                              pretrained=pretrained,
+                              in_chans=in_channels,
+                              num_classes=out_classes)
+
+    return model
+
+
+def get_lamhalobotnet50ts_256_gradcam_layer(model):
+    return model.stages[3][2].conv3_1x1.conv
+
+
+def get_swinv2_base_window16_256(in_channels, out_classes, pretrained):
+    model = timm.create_model("swinv2_base_window16_256",
+                              pretrained=pretrained,
+                              in_chans=in_channels,
+                              num_classes=out_classes)
+    
+    return model
+
+
+def get_swinv2_base_window16_256_gradcam_layer(model):
+    print("Gradcam not available for swinv2_base_window16_256.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

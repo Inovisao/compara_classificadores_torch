@@ -80,31 +80,31 @@ def train(dataloader, model, loss_fn, optimizer):
         # Calculate the loss with the predictions and the true values.
         loss = loss_fn(pred, y)
 
+
         # Accumulate the loss to calculate the mean training loss.
         train_loss += loss_fn(pred, y).item()
 
         # Accumulate the number of correct predictions to calculate the accuracy during training.
         num_correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
-        # Set the parameter gradients to zero, so that it doesn't get accumulated for the backward step.
-        optimizer.zero_grad()
-
         # Calculate the gradient for each trainable parameter.
         loss.backward()
 
-        # Use the optimizer to optimize the model.
-        optimizer.step()
+        if batch % MODEL_HYPERPARAMETERS["ACCUMULATION_STEPS"] == 0 or batch == (num_batches - 1): 
+            # Use the optimizer to optimize the model.
+            optimizer.step()
+            # Set the parameter gradients to zero, so that it doesn't get accumulated for the backward step.
+            optimizer.zero_grad()
 
         if batch == 0:
             batch_size = len(X)
 
         # Show training information every n batches.
-        if batch % 2 == 0:
-            loss = loss.item()
+        if batch % 10 == 0:
+            loss_2_show = loss.item()
             print("Batch:", batch)
-            print("len(X):", len(X))
             current = (batch * batch_size) + len(X)
-            print(f"Loss: {loss:>7f} [{current:>5d} / {size:>5d}]")
+            print(f"Loss: {loss_2_show:>7f} [{current:>5d} / {size:>5d}]")
 
     # Calculate the mean loss during training.
     train_loss /= num_batches
@@ -205,6 +205,8 @@ def fit(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, pat
 
     # Show the path to the saved model.
     print(f"The best weights will be saved in: {path_to_save}.")
+
+    optimizer.zero_grad()
 
     # Run the training program for the specified number of epochs.
     for epoch in range(epochs):
