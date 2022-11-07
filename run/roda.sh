@@ -12,7 +12,7 @@ mkdir -p ../results/matrix
 opt=(adam sgd)
 
 # LEARNING RATES
-learning_rates=(0.001)
+learning_rates=(0.01 0.001 0.0001)
 
 cd ../src
 for lr in "${learning_rates[@]}"

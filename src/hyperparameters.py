@@ -19,7 +19,7 @@ DATA_HYPERPARAMETERS = {
     "NUM_CLASSES": NUM_CLASSES,
     "IN_CHANNELS": 3,
     "IMAGE_SIZE": 256,
-    "BATCH_SIZE": 6,
+    "BATCH_SIZE": 16,
     "USE_DATA_AUGMENTATION": True,
     "VAL_SPLIT": 0.2,
     
@@ -28,7 +28,7 @@ DATA_HYPERPARAMETERS = {
 # No learning rate here. The lr must be set in roda.sh.
 MODEL_HYPERPARAMETERS = {
     "NUM_EPOCHS": 1000,
-    "PATIENCE": 150,
+    "PATIENCE": 100,
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": True,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
