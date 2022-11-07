@@ -33,7 +33,6 @@ MODEL_HYPERPARAMETERS = {
     "USE_TRANSFER_LEARNING": True,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
     "CREATE_GRADCAM": False,
-    "ACCUMULATION_STEPS": 1, # 1 for no gradient accumulation.
 
 }
 

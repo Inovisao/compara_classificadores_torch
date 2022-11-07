@@ -80,7 +80,6 @@ def train(dataloader, model, loss_fn, optimizer):
         # Calculate the loss with the predictions and the true values.
         loss = loss_fn(pred, y)
 
-
         # Accumulate the loss to calculate the mean training loss.
         train_loss += loss_fn(pred, y).item()
 
@@ -90,11 +89,11 @@ def train(dataloader, model, loss_fn, optimizer):
         # Calculate the gradient for each trainable parameter.
         loss.backward()
 
-        if batch % MODEL_HYPERPARAMETERS["ACCUMULATION_STEPS"] == 0 or batch == (num_batches - 1): 
-            # Use the optimizer to optimize the model.
-            optimizer.step()
-            # Set the parameter gradients to zero, so that it doesn't get accumulated for the backward step.
-            optimizer.zero_grad()
+        # Use the optimizer to optimize the model.
+        optimizer.step()
+
+        # Set the parameter gradients to zero, so that it doesn't get accumulated for the backward step.
+        optimizer.zero_grad()
 
         if batch == 0:
             batch_size = len(X)
