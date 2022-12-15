@@ -30,6 +30,7 @@ architectures = {
 optimizers = {
     "adam": optim.adam,
     "sgd": optim.sgd,
+    "adagrad": optim.adagrad,
 }
 
 gradcam_layer_getters = {

@@ -30,3 +30,15 @@ def sgd(params, learning_rate):
                      nesterov=False,
                      maximize=False,
                      foreach=None)
+
+
+def adagrad(params, learning_rate):
+    return optim.Adagrad(params=params,
+                         lr=learning_rate,
+                         lr_decay=0,
+                         weight_decay=0,
+                         initial_accumulator_value=0,
+                         eps=1e-10,
+                         foreach=None,
+                         maximize=False)
+
