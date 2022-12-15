@@ -22,6 +22,7 @@ architectures = {
     "lamhalobotnet50ts_256": arch.get_lamhalobotnet50ts_256,
     "swinv2_base_window16_256": arch.get_swinv2_base_window16_256,
     "convnext_base": arch.get_convnext_base,
+    "resnet18": arch.get_resnet18,
 
 
 }
@@ -42,6 +43,7 @@ gradcam_layer_getters = {
     "lamhalobotnet50ts_256": arch.get_lamhalobotnet50ts_256_gradcam_layer,
     "swinv2_base_window16_256": arch.get_swinv2_base_window16_256_gradcam_layer,
     "convnext_base": arch.get_convnext_base_gradcam_layer,
+    "resnet18": arch.get_resnet18_gradcam_layer,
 
 }
 

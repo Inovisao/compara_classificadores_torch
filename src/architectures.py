@@ -165,7 +165,18 @@ def get_convnext_base_gradcam_layer(model):
     return model.features[7][2].block[0]
 
 
+def get_resnet18(in_channels, out_classes, pretrained):
+    """
+    ResNet18 from PyTorch vanilla.
+    """
+    model = models.resnet18(weights="DEFAULT")
+    model.fc = nn.Linear(in_features=512, out_features=out_classes, bias=True)
+    model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 
+    return model
+
+def get_resnet18_gradcam_layer(model):
+    return model.layer4[1].conv2
 
 
 
