@@ -150,6 +150,19 @@ def get_swinv2_base_window16_256_gradcam_layer(model):
     print("Gradcam not available for swinv2_base_window16_256.")
 
 
+def get_convnext_base(in_channels, out_classes, pretrained):
+    """
+    ConvNeXt model from vanilla PyTorch.
+    """
+    model = models.convnext_base(weights=models.ConvNeXt_Base_Weights) if pretrained else models.convnext_base()
+    model.classifier[2] = nn.Linear(in_features=1024, out_features=out_classes, bias=True)
+    model.features[0][0] = nn.Conv2d(in_channels, 128, kernel_size=(4, 4), stride=(4, 4))
+
+    return model
+
+
+def get_convnext_base_gradcam_layer(model):
+    return model.features[7][2].block[0]
 
 
 
