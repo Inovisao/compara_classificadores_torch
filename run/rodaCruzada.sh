@@ -77,7 +77,7 @@ do
 done
 
 cd ../src
-Rscript ./graficos.R
+Rscript ./graphics.R
 cd ../run
  
 
