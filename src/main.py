@@ -112,7 +112,9 @@ def main():
     precision, recall, fscore = helper_functions.test(dataloader=test_dataloader,
                                                       model=model, 
                                                       path_to_save_matrix_csv=path_to_matrix_csv, 
-                                                      path_to_save_matrix_png=path_to_matrix_png)
+                                                      path_to_save_matrix_png=path_to_matrix_png,
+                                                      labels_map=DATA_HYPERPARAMETERS["CLASSES"])
+
     
     # Create a string with run, learning rate, architecture,
     # optimizer, precision, recall and fscore, to append to the csv file:

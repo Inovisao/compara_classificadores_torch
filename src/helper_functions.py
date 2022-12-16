@@ -267,7 +267,7 @@ def fit(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, pat
     })
 
 
-def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png):
+def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     """
     This function tests a model.
     Args:
@@ -275,6 +275,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png):
         model: the model to be tested.
         path_to_save_matrix_csv: the path to save the confusion matrix as a .csv file.
         path_to_save_matrix_png: the path to save the confusion matrix as a .png image.
+        labels_map: a list with the labels. It will be used to create a list with the wrong classification.
 
     Returns: precision, recall and fscore calculated for the model in regard to the predictions on the test dataset.
 
@@ -294,12 +295,13 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png):
     # Proceed without calculating the gradients.
     with torch.no_grad():
         # Iterate over the data.
-        for img, label, _ in dataloader:
+        for img, label, filename in dataloader:
             # Send images and labels to the correct device.
             img, label = img.to(device, dtype=torch.float), label.to(device)
 
             # Make predictions with the model.
             prediction = model(img)
+            prediction_prob_values = prediction
 
             # Get the index of the prediction with the highest probability.
             prediction = prediction.argmax(1)
@@ -311,6 +313,11 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png):
 
             # Accumulate the number of correct predictions.
             test_correct += (prediction == label).type(torch.float).sum().item()
+            
+            for i in range(len(img)):
+                if (labels_map[prediction[i]] != labels_map[label[i]]):
+                    print(f"File {filename[i]} is {labels_map[label[i]]}. Predicted as: {labels_map[prediction[i]]}.\nProbabilities: {prediction_prob_values[i]}\n")
+
 
     # Calculate the accuracy.
     acc = test_correct / num_images

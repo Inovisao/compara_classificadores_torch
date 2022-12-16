@@ -9,7 +9,7 @@ mkdir -p ../results/matrix
 
 # OPTIMIZADORES
 #opt=(adam sgd adagrad)
-opt=(adam sgd)
+opt=(adagrad sgd)
 
 # LEARNING RATES
 learning_rates=(0.001)
