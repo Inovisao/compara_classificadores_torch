@@ -294,8 +294,8 @@ for (metric in metrics) {
     g <- ggplot(confusion_matrix, 
                 aes(x=variable,y=classes, fill=value)) + 
                 geom_tile() +
-                xlab("Measured") +
-                ylab("Predicted") +
+                xlab("Predicted") +
+                ylab("Measured") +
                 ggtitle(matrix_title) +
                 labs(fill="Scale") +
                 geom_text(aes(label=value)) +
@@ -323,8 +323,8 @@ for (metric in metrics) {
   g <- ggplot(confusion_matrix, 
               aes(variable, classes, fill=value)) + 
               geom_tile() + 
-              xlab("Measured") + 
-              ylab("Predicted") + 
+              xlab("Predicted") + 
+              ylab("Measured") + 
               ggtitle(matrix_title) + 
               labs(fill="Scale") + 
               geom_text(aes(label=value)) + 
