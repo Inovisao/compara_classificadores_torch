@@ -7,7 +7,7 @@ import torch
 ROOT_DATA_DIR = "../data"
 TRAIN_DATA_DIR = os.path.join(ROOT_DATA_DIR, "train")
 TEST_DATA_DIR = os.path.join(ROOT_DATA_DIR, "test")
-CLASSES = os.listdir(TRAIN_DATA_DIR)
+CLASSES = sorted(os.listdir(TRAIN_DATA_DIR))
 NUM_CLASSES = len(CLASSES)
 
 # Hyperparameters pertaining to the data to be passed into the model.

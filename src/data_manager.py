@@ -48,7 +48,7 @@ class CustomDataset(Dataset):
         self.data_dir = data_dir
         self.filenames = filenames
         self.labels = labels
-        self.labels_map = os.listdir(data_dir)
+        self.labels_map = sorted(os.listdir(data_dir))
         self.transform = transform
 
     def __getitem__(self, idx):
