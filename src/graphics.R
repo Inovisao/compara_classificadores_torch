@@ -195,7 +195,7 @@ if (length(factors) == 2) {
 
 dt <- data.table(data)
 
-precision_statistics <- dt[, list(median=median(precision), IQR=IQR(precision), mean=mean(precision), sd=sd(recall)), by=.(learning_rate, architecture, optimizer)]
+precision_statistics <- dt[, list(median=median(precision), IQR=IQR(precision), mean=mean(precision), sd=sd(precision)), by=.(learning_rate, architecture, optimizer)]
 
 recall_statistics <- dt[, list(median=median(recall), IQR=IQR(recall), mean=mean(recall), sd=sd(recall)), by=.(learning_rate, architecture, optimizer)]
 
