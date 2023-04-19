@@ -4,6 +4,4 @@ src/__pycache__/
 src/Rplots.pdf
 results/
 resultsNfolds/
-data/
 results_dl/
-model_checkpoints/

@@ -11,6 +11,7 @@ import pandas as pd
 import seaborn as sn
 from sklearn import metrics
 import torch
+from torch.nn.functional import softmax
 from torchvision import transforms
 device = MODEL_HYPERPARAMETERS["DEVICE"]
 
@@ -301,7 +302,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
 
             # Make predictions with the model.
             prediction = model(img)
-            prediction_prob_values = prediction
+            prediction_prob_values = softmax(prediction)
 
             # Get the index of the prediction with the highest probability.
             prediction = prediction.argmax(1)

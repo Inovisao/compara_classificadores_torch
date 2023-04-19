@@ -12,17 +12,19 @@ NUM_CLASSES = len(CLASSES)
 
 # Hyperparameters pertaining to the data to be passed into the model.
 DATA_HYPERPARAMETERS = {
+    "IMAGE_SIZE": 256,
+    "BATCH_SIZE": 4,
+    "VAL_SPLIT": 0.2,
+    "USE_DATA_AUGMENTATION": True,
+    "DATA_SCALE_FACTOR": 1, # This divides the data when it is read; useful for scaling (e.g., to [0, 1]) 
+    "NORMALIZE": True,
+    
+    "IN_CHANNELS": 3,
     "ROOT_DATA_DIR": ROOT_DATA_DIR,
     "TRAIN_DATA_DIR": TRAIN_DATA_DIR,
     "TEST_DATA_DIR": TEST_DATA_DIR,
     "CLASSES": CLASSES,
     "NUM_CLASSES": NUM_CLASSES,
-    "IN_CHANNELS": 5,
-    "IMAGE_SIZE": 256,
-    "BATCH_SIZE": 4,
-    "USE_DATA_AUGMENTATION": True,
-    "VAL_SPLIT": 0.2,
-    
 }
 
 # No learning rate here. The lr must be set in roda.sh.
@@ -32,7 +34,7 @@ MODEL_HYPERPARAMETERS = {
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": True,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "CREATE_GRADCAM": False,
+    "CREATE_GRADCAM": False, # Avoid using, I'll do something better later
 
 }
 

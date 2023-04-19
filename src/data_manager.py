@@ -14,6 +14,7 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 import tifffile as tiff
 import torch
+from torch.nn import Identity
 from torch.utils.data import Dataset, Subset, DataLoader
 from torchvision import transforms
 
@@ -30,14 +31,12 @@ def get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
             transforms.RandomVerticalFlip(p=DATA_AUGMENTATION["VERTICAL_FLIP"]),
             transforms.RandomRotation(degrees=DATA_AUGMENTATION["ROTATION"]),
             transforms.RandomPerspective(),
-            #transforms.ToTensor(),
-            #transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if DATA_HYPERPARAMETERS["NORMALIZE"] else Identity(),
         ])
     else:
         transforms_pipeline = transforms.Compose([
             transforms.Resize((image_size, image_size)),
-            #transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if normalize else None,
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if DATA_HYPERPARAMETERS["NORMALIZE"] else Identity(),
         ])
 
     return transforms_pipeline
@@ -48,12 +47,12 @@ class CustomDataset(Dataset):
         self.data_dir = data_dir
         self.filenames = filenames
         self.labels = labels
-        self.labels_map = sorted(os.listdir(data_dir))
+        self.labels_map = DATA_HYPERPARAMETERS["CLASSES"]
         self.transform = transform
 
     def __getitem__(self, idx):
 
-        assert self.labels_map == DATA_HYPERPARAMETERS["CLASSES"], "Problem with the class list..."
+        #assert self.labels_map == DATA_HYPERPARAMETERS["CLASSES"], "Problem with the class list..."
 
         # Get the label corresponding to the index.
         label = self.labels[idx]
@@ -69,9 +68,9 @@ class CustomDataset(Dataset):
 
         # If needed, the following lines can be changed to load images with other extensions with other packages.
         if ext == ".tiff" or ext == ".tif":
-            image = transforms.functional.to_tensor(tiff.imread(filepath).astype(np.int32) / 255.)
+            image = transforms.functional.to_tensor(tiff.imread(filepath).astype(np.int32) / DATA_HYPERPARAMETERS["DATA_SCALE_FACTOR"])
         else:
-            image = transforms.functional.to_tensor(Image.open(filepath))
+            image = transforms.functional.to_tensor(Image.open(filepath)) / DATA_HYPERPARAMETERS["DATA_SCALE_FACTOR"]
 
         # Get the index of the label from the map of labels.
         label_num = torch.tensor(self.labels_map.index(label))
