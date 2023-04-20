@@ -15,18 +15,28 @@ library(data.table)
 #install.packages("kableExtra")
 
 # Define nicknames for the architectures. Keep the indexes symmetric!
-original_arch_name <- list("lambda_resnet26rpt_256", 
+original_arch_name <- list("alexnet",
+                           "coat_tiny",
+                           "convnext_base", 
+                           "lambda_resnet26rpt_256", 
                            "lamhalobotnet50ts_256",
                            "maxvit_rmlp_tiny_rw_256",
+                           "resnet18",
                            "sebotnet33ts_256",
                            "swinv2_base_window16_256",
+                           "vgg19",
                            "vit_relpos_base_patch32_plus_rpn_256")
 
-arch_nickname <- list("LambdaResnet",
+arch_nickname <- list("alexnet",
+                      "coat",
+                      "convnext",
+                      "LambdaResnet",
                       "LamHaloBotNet",
                       "MaxViT",
+                      "ResNet18",
                       "SEBotNet",
                       "SwinV2",
+                      "Vgg19",
                       "ViTRelPosRPN")
 
 
