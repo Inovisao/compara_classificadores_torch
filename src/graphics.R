@@ -203,6 +203,9 @@ if (length(factors) == 2) {
 # Get some statistics.
 ###########################################################
 
+
+options(width=10000) # Change line width
+
 dt <- data.table(data)
 
 precision_statistics <- dt[, list(median=median(precision), IQR=IQR(precision), mean=mean(precision), sd=sd(precision)), by=.(learning_rate, architecture, optimizer)]
@@ -256,6 +259,7 @@ for (metric in metrics) {
   # Get the combination with highest precision median.
   best <- median_values %>% filter(median_values[[metric]] == max(median_values[[metric]]))
   
+  print(best)
   # Create the filename.
   filename = sprintf("%s_%s_%s_MATRIX.csv", best$original_arch_names, best$original_optim_names, format(best$learning_rate, scientific=FALSE))
   
