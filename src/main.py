@@ -13,6 +13,7 @@ from hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AU
 import os
 import torch
 from torch import nn
+from torchvision import transforms
 
 ########################################################################################################################
 ########################################################################################################################
@@ -27,7 +28,7 @@ def main():
         print("Using transfer learning!")
     else:
         print("Not using transfer learning!")
-
+        
     # Get CLI arguments.
     args = helper_functions.get_args()
     
@@ -47,7 +48,8 @@ def main():
                              in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], 
                              out_classes=DATA_HYPERPARAMETERS["NUM_CLASSES"], 
                              pretrained=MODEL_HYPERPARAMETERS["USE_TRANSFER_LEARNING"])
-
+    
+    
     # Send the model to the correct device.
     model = model.to(device)
     print("===================================")
@@ -68,6 +70,11 @@ def main():
 
     # Get the optimizer.
     optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args["learning_rate"])
+    
+    try:
+        assert optimizer.__name__
+    except AttributeError as _:
+        optimizer.__name__ = args["optimizer"]
         
     # Get the loss function.
     loss_function = nn.CrossEntropyLoss()
@@ -127,7 +134,11 @@ def main():
     f.close()
 
     # Create the GradCAM files.
-    if MODEL_HYPERPARAMETERS["CREATE_GRADCAM"] and DATA_HYPERPARAMETERS["IN_CHANNELS"] == 3:
+    if MODEL_HYPERPARAMETERS["CREATE_GRADCAM"] and DATA_HYPERPARAMETERS["IN_CHANNELS"] == 3 and args["architecture"] != "ielt":
+        
+        test_dataloader.dataset.transform = transforms.Compose([
+            transforms.Resize((DATA_HYPERPARAMETERS["IMAGE_SIZE"], DATA_HYPERPARAMETERS["IMAGE_SIZE"]))
+        ])
 
         # Get the target layer for the GradCAM:
         gradcam_target_layer = gradcam_layer_getters[args["architecture"]](model=model)
@@ -149,6 +160,8 @@ def main():
                                         path_to_save=gradcam_filepath)
     elif DATA_HYPERPARAMETERS["IN_CHANNELS"] != 3:
         print("GradCAM available only for images with 3 channels.")
+    elif args["architecture"] == "ielt":
+        print("GradCAM not available for the IELT architecture.")
     else:
         print("Skipping GradCAM...")
 

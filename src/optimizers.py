@@ -6,7 +6,12 @@
 
 """
 
+from lion_pytorch import Lion
+from sam import SAM
 from torch import optim
+
+
+SAM_BASE_OPTIM = optim.SGD
 
 
 def adam(params, learning_rate):
@@ -42,3 +47,24 @@ def adagrad(params, learning_rate):
                          foreach=None,
                          maximize=False)
 
+
+def lion(params, learning_rate):
+    return Lion(params=params, 
+                lr=learning_rate, 
+                betas=(0.9, 0.99), 
+                weight_decay=0.0)
+
+
+def sam(params, learning_rate):
+    optimizer = SAM(params, 
+                    SAM_BASE_OPTIM, 
+                    lr=learning_rate, 
+                    momentum=0.9)
+    
+    optimizer.__name__ = "sam"
+    
+    return optimizer
+    
+    
+    
+    

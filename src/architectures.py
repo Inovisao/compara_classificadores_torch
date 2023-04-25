@@ -3,9 +3,15 @@
 """
     Architectures are defined in this file.
 """
+import os
+import wget
 import timm
 from torch import nn
 from torchvision import models
+import numpy as np
+from hyperparameters import DATA_HYPERPARAMETERS
+from IELT.models.vit import get_b16_config
+from IELT.models.IELT import InterEnsembleLearningTransformer
 
 
 def alexnet(in_channels, out_classes, pretrained):
@@ -179,9 +185,41 @@ def get_resnet18_gradcam_layer(model):
     return model.layer4[1].conv2
 
 
+def get_resnet50(in_channels, out_classes, pretrained):
+    model = models.resnet50(weights="DEFAULT")
+    model.fc = nn.Linear(in_features=2048, out_features=out_classes, bias=True)
+    model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    
+    return model
+
+def get_resnet50_gradcam_layer(model):
+    return model.layer4[1].conv2
 
 
+def get_ielt(in_channels, out_classes, pretrained):
+    
+    if not os.path.exists("./IELT/pretrained"):
+        os.mkdir("./IELT/pretrained")
+    
+    if not os.path.exists("./IELT/pretrained/ViT-B_16.npz"):
+        weights_url = "https://storage.googleapis.com/vit_models/imagenet21k/ViT-B_16.npz"
+        path_pretrained = "./IELT/pretrained/ViT-B_16.npz"
+        wget.download(weights_url, path_pretrained)
+        
+    config = get_b16_config()
+    model = InterEnsembleLearningTransformer(config, img_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"], num_classes=out_classes)
+    
+    if pretrained:
+        model.load_from(np.load("./IELT/pretrained/ViT-B_16.npz"))
+    
+    model.embeddings.patch_embeddings = nn.Conv2d(in_channels, 768, kernel_size=(16, 16), stride=(16, 16))
+    model.softmax = nn.Identity()
+    
+    return model
 
+def get_ielt_gradcam_layer(model):
+    print("GradCAM not available for IELT.")
+    
 
 
 

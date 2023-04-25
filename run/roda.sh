@@ -1,6 +1,6 @@
 # CLASSIFICADORES QUE VOCÊ QUER TESTAR
-#arqs=(alexnet coat_tiny maxvit_rmlp_tiny_rw_256 vgg19 lambda_resnet26rpt_256 vit_relpos_base_patch32_plus_rpn_256 sebotnet33ts_256 lamhalobotnet50ts_256 swinv2_base_window16_256 convnext_base resnet18)
-arqs=(resnet18 convnext_base)
+#arqs=(alexnet coat_tiny maxvit_rmlp_tiny_rw_256 vgg19 lambda_resnet26rpt_256 vit_relpos_base_patch32_plus_rpn_256 sebotnet33ts_256 lamhalobotnet50ts_256 swinv2_base_window16_256 convnext_base resnet18 ielt)
+arqs=(ielt resnet50)
 
 mkdir -p ../results
 rm -rf ../results/*
@@ -8,8 +8,8 @@ mkdir -p ../results/history
 mkdir -p ../results/matrix
 
 # OPTIMIZADORES
-#opt=(adam sgd adagrad)
-opt=(adagrad sgd)
+#opt=(adam sgd adagrad lion sam)
+opt=(sam lion adagrad)
 
 # LEARNING RATES
 learning_rates=(0.001)

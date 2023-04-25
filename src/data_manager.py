@@ -5,7 +5,7 @@
     This file contains a class which is responsible for managing the data for the model.
 """ 
 
-from hyperparameters import DATA_HYPERPARAMETERS, DATA_AUGMENTATION
+from hyperparameters import DATA_HYPERPARAMETERS, DATA_AUGMENTATION, MODEL_HYPERPARAMETERS
 
 import numpy as np
 import os
@@ -20,17 +20,30 @@ from torchvision import transforms
 
 
 def get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"], 
-                   data_augmentation=DATA_HYPERPARAMETERS["USE_DATA_AUGMENTATION"]):
+                   data_augmentation=DATA_HYPERPARAMETERS["USE_DATA_AUGMENTATION"],
+                   for_gradcam=False):
     # Create a transforms pipeline. It may only resize the images,
     # resize and apply data augmentation, and, in both cases, it may or may not also normalize the data.
     if data_augmentation:
         transforms_pipeline = transforms.Compose([
-            transforms.Resize((image_size, image_size)),    
+            transforms.Resize((image_size, image_size)),
+            transforms.ColorJitter(),
+            transforms.RandomGrayscale(),
+            transforms.RandomInvert(),
+            transforms.RandomSolarize(threshold=0.75),
+            transforms.RandomAutocontrast(),
+            transforms.RandomEqualize() if DATA_AUGMENTATION["RAND_EQUALIZE"] else Identity(),
             transforms.RandomCrop(size=(image_size, image_size)),
             transforms.RandomHorizontalFlip(p=DATA_AUGMENTATION["HORIZONTAL_FLIP"]),
             transforms.RandomVerticalFlip(p=DATA_AUGMENTATION["VERTICAL_FLIP"]),
             transforms.RandomRotation(degrees=DATA_AUGMENTATION["ROTATION"]),
             transforms.RandomPerspective(),
+            transforms.RandomAdjustSharpness(sharpness_factor=2),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if DATA_HYPERPARAMETERS["NORMALIZE"] else Identity(),
+        ])
+    elif (for_gradcam):
+        transforms_pipeline = transforms.Compose([
+            transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if DATA_HYPERPARAMETERS["NORMALIZE"] else Identity(),
         ])
     else:
@@ -119,7 +132,7 @@ def read_images(data_dir, subset):
                                 labels=labels,
                                 transform=get_transforms())
     else:
-        dataset = CustomDataset(data_dir=subset_directory,
+        dataset = CustomDataset(data_dir=subset_directory, # For testing
                                 filenames=filenames,
                                 labels=labels,
                                 transform=get_transforms(data_augmentation=False))
@@ -142,6 +155,7 @@ def print_data_informations(train_data, val_data, test_data, train_dataloader):
     print(f"Number of training images: {len(train_data)} ({100 * len(train_data) / total_images:>2f}%)")
     print(f"Number of validation images: {len(val_data)} ({100 * len(val_data) / total_images:>2f}%)")
     print(f"Number of test images: {len(test_data)} ({100 * len(test_data) / total_images:>2f}%)")
+    
     labels_map = DATA_HYPERPARAMETERS["CLASSES"]
     print(f"\nClasses: {labels_map}")
 
@@ -162,6 +176,7 @@ def get_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
 
     train_dataset = read_images(data_dir, "train")
     test_dataset = read_images(data_dir, "test")
+    
 
     # Get indexes for training and validation.
     train_idx, val_idx = train_test_split(list(range(len(train_dataset))), test_size=val_split)
@@ -174,7 +189,7 @@ def get_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
-
+    
     print_data_informations(train_dataset, val_dataset, test_dataset, train_dataloader)
 
     return train_dataloader, val_dataloader, test_dataloader

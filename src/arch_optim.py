@@ -23,6 +23,8 @@ architectures = {
     "swinv2_base_window16_256": arch.get_swinv2_base_window16_256,
     "convnext_base": arch.get_convnext_base,
     "resnet18": arch.get_resnet18,
+    "resnet50": arch.get_resnet50,
+    "ielt": arch.get_ielt,
 
 
 }
@@ -31,6 +33,8 @@ optimizers = {
     "adam": optim.adam,
     "sgd": optim.sgd,
     "adagrad": optim.adagrad,
+    "lion": optim.lion,
+    "sam": optim.sam,
 }
 
 gradcam_layer_getters = {
@@ -45,6 +49,8 @@ gradcam_layer_getters = {
     "swinv2_base_window16_256": arch.get_swinv2_base_window16_256_gradcam_layer,
     "convnext_base": arch.get_convnext_base_gradcam_layer,
     "resnet18": arch.get_resnet18_gradcam_layer,
+    "resnet50": arch.get_resnet50_gradcam_layer,
+    "ielt": arch.get_ielt_gradcam_layer
 
 }
 

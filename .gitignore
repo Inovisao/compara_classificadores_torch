@@ -2,6 +2,9 @@
 .Rhistory
 src/__pycache__/
 src/Rplots.pdf
+src/IELT/pretrained/
 results/
 resultsNfolds/
 results_dl/
+data
+model_checkpoints

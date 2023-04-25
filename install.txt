@@ -1,3 +1,12 @@
+O próximo que for instalar, antes de rodar o que tem aqui, tente usar o seguinte comando:
+
+conda env create -f environment.yml
+
+O objetivo é que ele instale o conteúdo de environment.yml automaticamente e reduza o problema com versões.
+Se funcionar, avise neste arquivo.
+Se não funcionar, tente encontrar o que deu errado.
+Se não funcionar, uma possibilidade é que seja um problema com o driver da GPU. Estou usando a versão 510.108.03, com CUDA 11.6.
+
 # Para instalar as dependências do compara_regresores_torch
 # COPIE E COLE OS COMANDOS ABAIXO NO TERMINAL
 # NÃO FUNCIONA RODANDO O SCRIPT (AINDA).

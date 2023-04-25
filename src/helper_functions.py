@@ -4,6 +4,7 @@
 import argparse
 from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
 import matplotlib.pyplot as plt
+import numpy as np
 from omnixai.data.image import Image
 from omnixai.explainers.vision.specific.gradcam.pytorch.gradcam import GradCAM
 import os
@@ -13,6 +14,8 @@ from sklearn import metrics
 import torch
 from torch.nn.functional import softmax
 from torchvision import transforms
+from data_manager import get_transforms
+
 device = MODEL_HYPERPARAMETERS["DEVICE"]
 
 
@@ -74,27 +77,42 @@ def train(dataloader, model, loss_fn, optimizer):
     for batch, (X, y, _) in enumerate(dataloader):
         # Send the images and the labels to the device.
         X, y = X.to(device, dtype=torch.float), y.to(device)
+        
+        if optimizer.__name__ == "sam":
+            pred = model(X)
+            loss = loss_fn(pred, y)
+            loss.backward()
+            optimizer.first_step(zero_grad=True)
+            
+            pred = model(X)
+            loss = loss_fn(pred, y)
+            loss.backward()
+            optimizer.second_step(zero_grad=True)
+            
+            train_loss += loss.item()
+            num_correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            
+        else:
+            # Make predictions using the current weights.
+            pred = model(X)
+            
+            # Calculate the loss with the predictions and the true values.
+            loss = loss_fn(pred, y)
 
-        # Make predictions using the current weights.
-        pred = model(X)
+            # Accumulate the loss to calculate the mean training loss.
+            train_loss += loss_fn(pred, y).item()
 
-        # Calculate the loss with the predictions and the true values.
-        loss = loss_fn(pred, y)
+            # Accumulate the number of correct predictions to calculate the accuracy during training.
+            num_correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
-        # Accumulate the loss to calculate the mean training loss.
-        train_loss += loss_fn(pred, y).item()
+            # Calculate the gradient for each trainable parameter.
+            loss.backward()
 
-        # Accumulate the number of correct predictions to calculate the accuracy during training.
-        num_correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            # Use the optimizer to optimize the model.
+            optimizer.step()
 
-        # Calculate the gradient for each trainable parameter.
-        loss.backward()
-
-        # Use the optimizer to optimize the model.
-        optimizer.step()
-
-        # Set the parameter gradients to zero, so that it doesn't get accumulated for the backward step.
-        optimizer.zero_grad()
+            # Set the parameter gradients to zero, so that it doesn't get accumulated for the backward step.
+            optimizer.zero_grad()
 
         if batch == 0:
             batch_size = len(X)
@@ -336,14 +354,14 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     df_matrix.to_csv(path_to_save_matrix_csv)
 
     # Create a graphical matrix.
-    plt.figure(figsize=(12, 10))
+    plt.figure()
     sn.heatmap(df_matrix, annot=True, yticklabels=classes, xticklabels=classes)
-    plt.title("Confusion matrix", fontsize=12)
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
+    plt.title("Confusion matrix", fontsize=14)
+    plt.xlabel("Predicted", fontsize=12)
+    plt.ylabel("True", fontsize=12)
 
     # Save the figure.
-    plt.savefig(path_to_save_matrix_png)
+    plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
     
     # Get some metrics.
     precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, average="macro")
@@ -372,44 +390,54 @@ def plot_history(history, path_to_save):
     with the path to save it.
 
     """
-
-    # Create a matplotlib figure and set its size.
-    plt.figure(figsize=(15, 10))
-    plt.suptitle("Training and validation plots for loss and accuracy", fontsize=12)
-
     # Get the number of epochs.
     epochs = list(range(len(history["val_loss"])))
 
     # First subplot, with losses.
-    plt.subplot(1, 2, 1)
+    fig, ax = plt.subplots(1, 2)
     # Plot the training loss.
-    plt.plot(epochs, history["loss"], label="Training loss")
-    # Plot the validation loss.
-    plt.plot(epochs, history["val_loss"], label="Validation loss")
+    
+    # Get scale-appropriate ylim
+    all_losses = list(history["loss"]) + list(history["val_loss"])
+    quantiles = np.quantile(all_losses, [0.25, 0.75])
+    iqr = (quantiles[1] - quantiles[0])
+    norm_sup = quantiles[1] + (1.5 * iqr)
+    norm_inf = quantiles[0] - (1.5 * iqr)
+    ax[0].set_ylim(norm_inf, norm_sup)
+    
+    # Plot
+    ax[0].plot(epochs, history["loss"], label="Training loss")
+    ax[0].plot(epochs, history["val_loss"], label="Validation loss")
     # Give the subplot a title.
-    plt.title("Training and validation losses per epoch.", fontsize=12)
+    ax[0].set_title("Losses", fontsize=12)
     # Specify axes' names.
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
+    ax[0].set_xlabel("Epochs")
+    ax[0].set_ylabel("Loss")
+    
     # Put a legend into the subplot.
-    plt.legend()
+    ax[0].legend()
 
-    # First subplot, with accuracies.
-    plt.subplot(1, 2, 2)
     # Plot training accuracy.
-    plt.plot(epochs, history["acc"], label="Training accuracy")
-    # Plot validation accuracy.
-    plt.plot(epochs, history["val_acc"], label="Validation accuracy")
     # Give the subplot a title.
-    plt.title("Training and validation accuracies per epoch.", fontsize=12)
+    ax[1].set_title("Accuracies", fontsize=12)
     # Specify axes' names.
-    plt.xlabel("Epochs")
-    plt.ylabel("Accuracy")
+    ax[1].set_xlabel("Epochs")
+    ax[1].set_ylabel("Accuracy")
+    
+    # Plot
+    ax[1].plot(epochs, history["acc"], label="Training accuracy")
+    ax[1].plot(epochs, history["val_acc"], label="Validation accuracy")
+    
     # Put a legend into the subplot.
-    plt.legend()
+    ax[1].legend()
 
+    # Set the big title
+    suptitle = plt.suptitle("Training vs. Validation", fontsize=14)
+    
+    # Adjust the layout
+    fig.tight_layout()
     # Save the plot.
-    plt.savefig(path_to_save)
+    plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
 
 
 def create_gradcam(dataloader, model, target_layer, subset, labels_map, path_to_save):
@@ -448,7 +476,9 @@ def create_gradcam(dataloader, model, target_layer, subset, labels_map, path_to_
             one_image = Image(one_image, batched=False, channel_last=False)
 
             # Compose a transform to turn the image into a tensor.
-            transform = transforms.Compose([transforms.ToTensor()])
+            transform = get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
+                                       data_augmentation=False,
+                                       for_gradcam=True)
 
             # Instantiate a GradCAM object.
             explainer = GradCAM(model=model,
