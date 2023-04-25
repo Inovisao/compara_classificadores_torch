@@ -18,6 +18,7 @@
 
 - Para adicionar uma nova arquitetura, defina uma função em architectures.py. Instancie a arquitetura e programe a alteração da primeira e da última camadas. Registre a nova arquitetura no dicionário que consta em arch_optim.py.
 - Para adicionar um novo otimizador, defina uma função em optimizers.py. Os hiperparâmetros do otimizador devem estar declarados explicitamente, mesmo que o valor atribuído seja o valor padrão.
+- Adicionei uma arquitetura, a IELT, que não é nem do torchvision nem do timm (embora usem o PyTorch na implementação). Acho que ela fornece um bom exemplo de como podemos aproveitar o código para testar arquiteturas diversas. Também adicionei dois otimizadores nas mesmas condições.
 
 ## Informações adicionais.
 
