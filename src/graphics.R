@@ -15,18 +15,28 @@ library(data.table)
 #install.packages("kableExtra")
 
 # Define nicknames for the architectures. Keep the indexes symmetric!
-original_arch_name <- list("lambda_resnet26rpt_256", 
+original_arch_name <- list("alexnet",
+                           "coat_tiny",
+                           "convnext_base", 
+                           "lambda_resnet26rpt_256", 
                            "lamhalobotnet50ts_256",
                            "maxvit_rmlp_tiny_rw_256",
+                           "resnet18",
                            "sebotnet33ts_256",
                            "swinv2_base_window16_256",
+                           "vgg19",
                            "vit_relpos_base_patch32_plus_rpn_256")
 
-arch_nickname <- list("LambdaResnet",
+arch_nickname <- list("alexnet",
+                      "coat",
+                      "convnext",
+                      "LambdaResnet",
                       "LamHaloBotNet",
                       "MaxViT",
+                      "ResNet18",
                       "SEBotNet",
                       "SwinV2",
+                      "Vgg19",
                       "ViTRelPosRPN")
 
 
@@ -193,6 +203,9 @@ if (length(factors) == 2) {
 # Get some statistics.
 ###########################################################
 
+
+options(width=10000) # Change line width
+
 dt <- data.table(data)
 
 precision_statistics <- dt[, list(median=median(precision), IQR=IQR(precision), mean=mean(precision), sd=sd(precision)), by=.(learning_rate, architecture, optimizer)]
@@ -246,6 +259,7 @@ for (metric in metrics) {
   # Get the combination with highest precision median.
   best <- median_values %>% filter(median_values[[metric]] == max(median_values[[metric]]))
   
+  print(best)
   # Create the filename.
   filename = sprintf("%s_%s_%s_MATRIX.csv", best$original_arch_names, best$original_optim_names, format(best$learning_rate, scientific=FALSE))
   
