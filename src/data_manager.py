@@ -186,9 +186,9 @@ def get_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     train_dataset = Subset(train_dataset, train_idx)
     
     # Create the loaders.
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=14)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=14)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=14)
     
     print_data_informations(train_dataset, val_dataset, test_dataset, train_dataloader)
 
