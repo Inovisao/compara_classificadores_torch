@@ -579,7 +579,8 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
 
 def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     
-    # Return the metrics.
+    # do the testing somehow
+    
     return 0
 
 
