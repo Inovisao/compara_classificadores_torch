@@ -234,8 +234,7 @@ def get_default_siamese(in_channels, out_classes, pretrained):
         nn.Conv2d(128, 256, kernel_size=4, stride=1),
         nn.ReLU(),
         nn.Flatten(),
-        nn.Linear(9216, out_classes),
-        nn.Sigmoid()
+        nn.Linear(9216, out_classes)
     )
     return embedding_model
 

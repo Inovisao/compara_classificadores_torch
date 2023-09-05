@@ -27,7 +27,7 @@ class L1Dist(nn.Module):
 class SiameseNetwork(nn.Module):
     def __init__(self, embedding_model):
         super(SiameseNetwork, self).__init__()
-        self.embedding = embedding_model
+        self.embedding = nn.Sigmoid()(embedding_model)
         self.siamese_layer = L1Dist()
         self.classifier = nn.Linear(4096, 1)
         self.model_output = nn.Sigmoid()
@@ -100,19 +100,19 @@ def main():
         optimizer.__name__ = args["optimizer"]
         
     # Get the loss function.
-    loss_function = nn.CrossEntropyLoss()
+    loss_function = nn.BCELoss()
     
     # Get the dataloaders.
-    train_dataloader, val_dataloader, test_dataloader = data_manager.get_data()
+    train_dataloader, val_dataloader, test_data, one_shot_data = data_manager.get_siamese_data()
     
     # Give the model a name.
-    model_name = str(args["run"]) + "_" + str(args["architecture"]) + \
+    model_name = "siamese" + str(args["run"]) + "_" + str(args["architecture"]) + \
         "_" + str(args["optimizer"]) + "_" + str(args["learning_rate"])
 
     # Create a path to save the model.
     path_to_save = "../model_checkpoints/" + model_name + ".pth"
     
-    history = helper_functions.fit(train_dataloader=train_dataloader,
+    history = helper_functions.fit_siamese(train_dataloader=train_dataloader,
                                    val_dataloader=val_dataloader,
                                    model=model,
                                    optimizer=optimizer,
@@ -139,10 +139,9 @@ def main():
     path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
 
     # Test, save the results and get precision, recall and fscore.
-    precision, recall, fscore = helper_functions.test(dataloader=test_dataloader,
-                                                      model=model, 
-                                                      path_to_save_matrix_csv=path_to_matrix_csv, 
-                                                      path_to_save_matrix_png=path_to_matrix_png,
+    precision, recall, fscore = helper_functions.test_siamese(test_data=test_data,
+                                                      one_shot_data=one_shot_data, 
+                                                      model=model,
                                                       labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"])
 
     
@@ -155,42 +154,6 @@ def main():
     f = open("../results_dl/results.csv", "a")
     f.write(results)
     f.close()
-
-    # # Create the GradCAM files.
-    # if SIAMESE_MODEL_HYPERPARAMETERS["CREATE_GRADCAM"] and SIAMESE_DATA_HYPERPARAMETERS["IN_CHANNELS"] == 3 and args["architecture"] != "ielt":
-        
-    #     test_dataloader.dataset.transform = transforms.Compose([
-    #         transforms.Resize((SIAMESE_DATA_HYPERPARAMETERS["IMAGE_SIZE"], SIAMESE_DATA_HYPERPARAMETERS["IMAGE_SIZE"]))
-    #     ])
-
-    #     # Get the target layer for the GradCAM:
-    #     gradcam_target_layer = gradcam_layer_getters[args["architecture"]](model=model)
-
-    #     # Create the name of the folder to save the images.
-    #     gradcam_filepath = "../results/GradCAM_" + str(args["run"]) + "," + str(args["learning_rate"]) + "," + \
-    #         str(args["architecture"]) + "," + str(args["optimizer"])
-
-    #     # Create the directory for the GradCAM files.
-    #     os.mkdir(path=gradcam_filepath)
-
-    #     print("Generating GradCAM files for the test images...")
-
-    #     helper_functions.create_gradcam(dataloader=test_dataloader,
-    #                                     model=model,
-    #                                     target_layer=gradcam_target_layer,
-    #                                     subset="test",
-    #                                     labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"],
-    #                                     path_to_save=gradcam_filepath)
-    # elif SIAMESE_DATA_HYPERPARAMETERS["IN_CHANNELS"] != 3:
-    #     print("GradCAM available only for images with 3 channels.")
-    # elif args["architecture"] == "ielt":
-    #     print("GradCAM not available for the IELT architecture.")
-    # else:
-    #     print("Skipping GradCAM...")
-
-    # # Confirm that execution has been properly completed.
-    # print("\nFinished execution.")
-
 
 # Call the main function.
 if __name__ == "__main__":

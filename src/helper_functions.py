@@ -12,7 +12,7 @@ import pandas as pd
 import seaborn as sn
 from sklearn import metrics
 import torch
-import torch.nn as nn
+from torchmetrics import Recall, Precision, F1Score
 from torch.nn.functional import softmax
 from torchvision import transforms
 from data_manager import get_transforms
@@ -433,10 +433,10 @@ def fit_siamese(train_dataloader, val_dataloader, model, optimizer, loss_fn, epo
         print(f"\nExecuting epoch number: {epoch + 1}")
 
         # Train the model and get the loss and the accuracy.
-        train_loss, train_acc = train(train_dataloader, model, loss_fn, optimizer)
+        train_loss, train_acc = train_siamese(train_dataloader, model, loss_fn, optimizer)
 
         # Validate the training and get the loss and the accuracy.
-        val_loss, val_acc = validation(dataloader=val_dataloader,
+        val_loss, val_acc = validation_siamese(dataloader=val_dataloader,
                                        model=model,
                                        loss_fn=loss_fn)
 
@@ -577,11 +577,43 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     return precision, recall, fscore
 
 
-def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
+def test_siamese(test_data, one_shot_data, model, labels_map):
     
-    # do the testing somehow
-    
-    return 0
+    precision_metric = Precision(task="multiclass", num_classes=len(labels_map))
+    recall_metric = Recall(task="multiclass", num_classes=len(labels_map))
+    fscore_metric = F1Score(task="multiclass", num_classes=len(labels_map))
+
+    with torch.no_grad():
+        for item in test_data:
+            image = item[0].unsqueeze(0).to(device)
+            label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
+            highest_score = float('-inf')
+            image_class = -1
+            print(len(one_shot_data))
+            for anchor in one_shot_data:
+                anchor_image = anchor[0].unsqueeze(0).to(device)
+                pred_score = model(image, anchor_image)
+                if pred_score > highest_score:
+                    highest_score = pred_score
+                    image_class = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == anchor[1])
+            
+            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {highest_score.item()}')
+            
+            precision_metric.update(image_class, label)
+            recall_metric.update(image_class, label)
+            fscore_metric.update(image_class, label)
+
+        avg_precision = precision_metric.compute()
+        avg_recall = recall_metric.compute()
+        avg_fscore = fscore_metric.compute()
+
+
+    print("Final results:")
+    print("Precision:", avg_precision)
+    print("Recall:", avg_recall)
+    print("F1 Score:", avg_fscore)
+
+    return avg_precision, avg_recall, avg_fscore
 
 
 def plot_history(history, path_to_save):

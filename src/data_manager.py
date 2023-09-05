@@ -5,7 +5,7 @@
     This file contains a class which is responsible for managing the data for the model.
 """ 
 
-from hyperparameters import DATA_HYPERPARAMETERS, DATA_AUGMENTATION, MODEL_HYPERPARAMETERS
+from hyperparameters import DATA_HYPERPARAMETERS, DATA_AUGMENTATION, SIAMESE_DATA_HYPERPARAMETERS
 
 import numpy as np
 import os
@@ -258,9 +258,9 @@ def get_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
 
     return train_dataloader, val_dataloader, test_dataloader
 
-def get_siamese_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"], 
-                     val_split=DATA_HYPERPARAMETERS["VAL_SPLIT"], 
-                     batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"]):
+def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"], 
+                     val_split=SIAMESE_DATA_HYPERPARAMETERS["VAL_SPLIT"], 
+                     batch_size=SIAMESE_DATA_HYPERPARAMETERS["BATCH_SIZE"]):
 
     TRAIN_PATH = os.path.join(data_dir,'train')
     TEST_PATH = os.path.join(data_dir,'test')
