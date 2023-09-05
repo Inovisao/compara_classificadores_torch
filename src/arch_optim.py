@@ -50,8 +50,8 @@ gradcam_layer_getters = {
     "convnext_base": arch.get_convnext_base_gradcam_layer,
     "resnet18": arch.get_resnet18_gradcam_layer,
     "resnet50": arch.get_resnet50_gradcam_layer,
-    "ielt": arch.get_ielt_gradcam_layer
-
+    "ielt": arch.get_ielt_gradcam_layer,
+    "default_siamese": arch.get_default_siamese
 }
 
 

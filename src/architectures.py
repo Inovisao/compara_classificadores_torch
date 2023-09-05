@@ -59,7 +59,6 @@ def vgg19(in_channels, out_classes, pretrained):
 def get_vgg19_gradcam_layer(model):
     return model.features[-3]
 
-
 def maxvit_rmlp_tiny_rw_256(in_channels, out_classes, pretrained):
     """
     Multi-axis vision transformer: https://arxiv.org/abs/2204.01697
@@ -221,6 +220,27 @@ def get_ielt_gradcam_layer(model):
     print("GradCAM not available for IELT.")
     
 
+def get_default_siamese(in_channels, out_classes, pretrained):
+    embedding_model = nn.Sequential(
+        nn.Conv2d(in_channels, 64, kernel_size=10, stride=1),
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+        nn.Conv2d(64, 128, kernel_size=7, stride=1),
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+        nn.Conv2d(128, 128, kernel_size=4, stride=1),
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+        nn.Conv2d(128, 256, kernel_size=4, stride=1),
+        nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(9216, out_classes),
+        nn.Sigmoid()
+    )
+    return embedding_model
+
+def get_siamese_gradcam(model):
+    print("GradCAM not available for Siamese.")
 
 
 
