@@ -22,7 +22,9 @@ do
         for k in "${opt[@]}"
         do
             echo 'Running' ${lr} ' ' ${i} ' ' ${k} ' see results in folder ../results/'
-            python siamese_main.py -a $i -o $k -r $1 -l $lr > ../results/${i}_${k}_${lr}.output 2> ../results/error_log_${i}_${k}_${lr}.txt
+            python3 siamese_main.py -a $i -o $k -r $1 -l $lr > ../results/${i}_${k}_${lr}.output 2> ../results/error_log_${i}_${k}_${lr}.txt
+            #python3 siamese_main.py -a $i -o $k -r $1 -l $lr #> ../results/${i}_${k}_${lr}.output 2> ../results/error_log_${i}_${k}_${lr}.txt
+            echo 'Finished running' ${lr} ' ' ${i} ' ' ${k}
         done
     done
 done

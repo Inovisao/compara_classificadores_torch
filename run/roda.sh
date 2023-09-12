@@ -21,8 +21,9 @@ do
     do
         for k in "${opt[@]}"
         do
-            echo 'Running' ${lr} ' ' ${i} ' ' ${k} ' see results in folder ../results/'
-            python main.py -a $i -o $k -r $1 -l $lr > ../results/${i}_${k}_${lr}.output 2> ../results/error_log_${i}_${k}_${lr}.txt
+            echo 'Running' ${lr} ' ' ${i} ' ' ${k} ' see results in folder ../results/']
+            python3 main.py -a $i -o $k -r $1 -l $lr > ../results/${i}_${k}_${lr}.output 2> ../results/error_log_${i}_${k}_${lr}.txt
+            echo 'Finished running' ${lr} ' ' ${i} ' ' ${k}
         done
     done
 done
