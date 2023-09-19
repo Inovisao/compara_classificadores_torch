@@ -10,13 +10,11 @@ import data_manager
 import helper_functions
 from hyperparameters import SIAMESE_DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
 
-import os
 import torch
 from torch import nn
+from torch.nn.functional import sigmoid
 from torchvision import transforms
 
-########################################################################################################################
-########################################################################################################################
 class L1Dist(nn.Module):
     def __init__(self):
         super(L1Dist, self).__init__()
@@ -27,7 +25,9 @@ class L1Dist(nn.Module):
 class SiameseNetwork(nn.Module):
     def __init__(self, embedding_model):
         super(SiameseNetwork, self).__init__()
-        self.embedding = nn.Sigmoid()(embedding_model)
+        self.model_sigmoid = nn.Sigmoid()
+        self.embedding = nn.Sequential(embedding_model,self.
+                                       model_sigmoid)
         self.siamese_layer = L1Dist()
         self.classifier = nn.Linear(4096, 1)
         self.model_output = nn.Sigmoid()
@@ -61,8 +61,8 @@ def main():
     assert args["architecture"].casefold() in architectures, \
         "Architecture not recognized. Maybe it hasn't been implemented yet."
 
-    assert args["architecture"].casefold() in gradcam_layer_getters, \
-        "No function to get the target layer for the GradCAM found."
+    # assert args["architecture"].casefold() in gradcam_layer_getters, \
+    #     "No function to get the target layer for the GradCAM found."
 
     # Get the model.
     embedding = get_architecture(args["architecture"], 
@@ -134,10 +134,6 @@ def main():
     # Load the best weights for testing.
     model.load_state_dict(torch.load(path_to_save))
 
-    # Define the paths to save the confusion matrix files.
-    path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"    
-    path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
-
     # Test, save the results and get precision, recall and fscore.
     precision, recall, fscore = helper_functions.test_siamese(test_data=test_data,
                                                       one_shot_data=one_shot_data, 
@@ -157,4 +153,5 @@ def main():
 
 # Call the main function.
 if __name__ == "__main__":
+    print('entrou 3')
     main()

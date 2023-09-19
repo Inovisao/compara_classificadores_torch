@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
+from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS
 import matplotlib.pyplot as plt
 import numpy as np
 from omnixai.data.image import Image
@@ -324,7 +324,7 @@ def train_siamese(dataloader, model, loss_fn, optimizer):
         
         loss = loss_fn(outputs.squeeze(), labels)
         train_loss += loss_fn(outputs.squeeze(), labels).item()
-        num_correct += (outputs.argmax(1) == labels).type(torch.float).sum().item()
+        num_correct += ((outputs.squeeze() >= SIAMESE_MODEL_HYPERPARAMETERS["ACC_THRESHOLD"]) == labels).type(torch.float).sum().item()
         
         loss.backward()
         optimizer.step()
@@ -375,7 +375,7 @@ def validation_siamese(dataloader, model, loss_fn):
             
             loss = loss_fn(outputs.squeeze(), labels).item()
             val_loss += loss
-            num_correct += (outputs.argmax(1) == labels).type(torch.float).sum().item()
+            num_correct += ((outputs.squeeze() >= SIAMESE_MODEL_HYPERPARAMETERS["ACC_THRESHOLD"]) == labels).type(torch.float).sum().item()
 
     # Calculate the mean loss.
     val_loss /= num_batches
@@ -412,6 +412,7 @@ def fit_siamese(train_dataloader, val_dataloader, model, optimizer, loss_fn, epo
     Returns:
 
     """
+    print('entrou')
     # Initialize a variable to watch the number of epochs without improvement for the patience limit.
     total_without_improvement = 0
 
@@ -599,9 +600,9 @@ def test_siamese(test_data, one_shot_data, model, labels_map):
             
             print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {highest_score.item()}')
             
-            precision_metric.update(image_class, label)
-            recall_metric.update(image_class, label)
-            fscore_metric.update(image_class, label)
+            precision_metric.update(torch.tensor([image_class]), torch.tensor([label]))
+            recall_metric.update(torch.tensor([image_class]), torch.tensor([label]))
+            fscore_metric.update(torch.tensor([image_class]), torch.tensor([label]))
 
         avg_precision = precision_metric.compute()
         avg_recall = recall_metric.compute()

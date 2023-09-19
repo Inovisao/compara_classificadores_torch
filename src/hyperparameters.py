@@ -62,6 +62,7 @@ SIAMESE_MODEL_HYPERPARAMETERS = {
     "USE_TRANSFER_LEARNING": False,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
     "CREATE_GRADCAM": False, # Avoid using, I'll do something better later
+    "ACC_THRESHOLD": 0.7,
 }
 
 
