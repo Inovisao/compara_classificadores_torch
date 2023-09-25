@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
+from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS
 import matplotlib.pyplot as plt
 import numpy as np
 from omnixai.data.image import Image
@@ -12,6 +12,7 @@ import pandas as pd
 import seaborn as sn
 from sklearn import metrics
 import torch
+from torchmetrics import Recall, Precision, F1Score
 from torch.nn.functional import softmax
 from torchvision import transforms
 from data_manager import get_transforms
@@ -286,6 +287,206 @@ def fit(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, pat
     })
 
 
+def train_siamese(dataloader, model, loss_fn, optimizer):
+    """
+    This function is used to train a siamese model. It is not called by itself, but inside the 'fit_siamese' function below.
+
+    Args:
+        dataloader: the training dataloader.
+        model: the model to be trained.
+        loss_fn: the loss function to be used.
+        optimizer: the optimizer to be used.
+
+    Returns: the training loss and the accuracy.
+
+    """
+    # Calculate the total number of images (which will be necessary below, to calculate the accuracy).
+    size = len(dataloader.dataset)
+
+    # Get the number of batches.
+    num_batches = len(dataloader)
+
+    # Puts the model in training mode.
+    model.train()
+
+    # Initialize the loss and the accuracy with value 0.
+    train_loss, train_accuracy = 0, 0
+
+    # Initialize the number of correct predictions as 0.
+    num_correct = 0
+
+    # Iterate over the batches with a counter (enumeration).
+    for batch in dataloader:
+        anchor = batch[0].to(device)
+        validation = batch[1].to(device)
+        labels = batch[2].float().to(device)
+        outputs = model(anchor, validation)
+        
+        loss = loss_fn(outputs.squeeze(), labels)
+        train_loss += loss_fn(outputs.squeeze(), labels).item()
+        num_correct += ((outputs.squeeze() >= SIAMESE_MODEL_HYPERPARAMETERS["ACC_THRESHOLD"]) == labels).type(torch.float).sum().item()
+        
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+    # Calculate the mean loss during training.
+    train_loss /= num_batches
+
+    # Calculate the accuracy during training.
+    train_accuracy = num_correct / size
+
+    # Return training loss and accuracy.
+    return train_loss, train_accuracy
+
+
+def validation_siamese(dataloader, model, loss_fn):
+    """
+    This function is used to validate the siamese training. Like the train function, it is not called by itself, but by the fit function.
+
+    Args:
+        dataloader: the validation dataloader.
+        model: the model whose training must be validated.
+        loss_fn: the loss function to be used.
+
+    Returns: the mean validation loss and the accuracy.
+
+    """
+    # Calculate the total number of images.
+    size = len(dataloader.dataset)
+
+    # Calculate the number of batches.
+    num_batches = len(dataloader)
+
+    # Put the model in evaluation mode.
+    model.eval()
+
+    # Initialize the validation loss and the number of correct predictions with value 0.
+    val_loss, num_correct = 0, 0
+
+    # Proceed without gradient calculation (this reduces the charge on the memory).
+    with torch.no_grad():
+        # Iterate over the dataloader.
+        for val_batch in dataloader:
+            anchor = val_batch[0].to(device)
+            validation = val_batch[1].to(device)
+            labels = val_batch[2].float().to(device)
+            outputs = model(anchor, validation)
+            
+            loss = loss_fn(outputs.squeeze(), labels).item()
+            val_loss += loss
+            num_correct += ((outputs.squeeze() >= SIAMESE_MODEL_HYPERPARAMETERS["ACC_THRESHOLD"]) == labels).type(torch.float).sum().item()
+
+    # Calculate the mean loss.
+    val_loss /= num_batches
+
+    # Calculate the accuracy.
+    val_accuracy = num_correct / size
+
+    # Print validation statistics.
+    print(f"\nValidation statistics:")
+    print(f"Total number of images: {size}.")
+    print(f"Total number of correct predictions: {int(num_correct)}.")
+    print(f"Mean loss: {val_loss:>8f}.")
+    print(f"Accuracy: {(100*val_accuracy):>0.2f}%.")
+
+    # Return the mean validation loss and the validation accuracy.
+    return val_loss, val_accuracy
+
+
+def fit_siamese(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, patience, tolerance, path_to_save):
+    """
+    This function fits the model to the training data for a number of epochs.
+
+    Args:
+        train_dataloader: the training dataloader.
+        val_dataloader: the validation dataloader.
+        model: the model to be trained.
+        optimizer: the optimizer with which the weights will get adjusted.
+        loss_fn: the loss function to be used.
+        epochs: the number of epochs.
+        patience: the maximum number of epochs without improvement accepted. Training will stop when this number is exceeded.
+        tolerance: the biggest change that doesn't count as improvement.
+        path_to_save: the path to which the model's best weights are to be saved.
+
+    Returns:
+
+    """
+    print('entrou')
+    # Initialize a variable to watch the number of epochs without improvement for the patience limit.
+    total_without_improvement = 0
+
+    # Initialize an empty list to hold the training and validation values during training.
+    loss_history = []
+    acc_history = []
+    val_loss_history = []
+    val_acc_history = []
+
+    # Show the path to the saved model.
+    print(f"The best weights will be saved in: {path_to_save}.")
+
+    optimizer.zero_grad()
+
+    # Run the training program for the specified number of epochs.
+    for epoch in range(epochs):
+        # Show the number of the epoch.
+        print("\n\n==================================================")
+        print(f"\nExecuting epoch number: {epoch + 1}")
+
+        # Train the model and get the loss and the accuracy.
+        train_loss, train_acc = train_siamese(train_dataloader, model, loss_fn, optimizer)
+
+        # Validate the training and get the loss and the accuracy.
+        val_loss, val_acc = validation_siamese(dataloader=val_dataloader,
+                                       model=model,
+                                       loss_fn=loss_fn)
+
+        # Append the losses and the accuracies to the lists initilized above.
+        loss_history.append(train_loss)
+        acc_history.append(train_acc)
+        val_loss_history.append(val_loss)
+        val_acc_history.append(val_acc)
+
+        # Get the first loss calculated in the first epoch.
+        if epoch == 0:
+            lowest_loss = val_loss
+            print("Saving model in the first epoch...")
+            torch.save(model.state_dict(), path_to_save)
+        # For the other epochs, verifies whether of not the current validation loss is better than the lowest loss
+        # observed until the epoch (also considering the tolerance).
+        elif val_loss < lowest_loss - tolerance:
+            # Save the new lowest loss.
+            lowest_loss = val_loss
+
+            # Save the model weights.
+            print("Best validation loss found. Saving model...")
+            torch.save(model.state_dict(), path_to_save)
+
+            # Reset the patience counter.
+            total_without_improvement = 0
+        else:
+            total_without_improvement += 1
+            print("Epochs without improvement:", total_without_improvement)
+
+        # Show the best validation loss observed until the current epoch.
+        print(f"Best validation loss until now: {lowest_loss:>0.5f}")
+
+        # Verify the patience. Break if patience is over.
+        if total_without_improvement > patience:
+            print(f"Patience ended with {epoch + 1} epochs.")
+            break
+
+    print("Training finished.")
+
+    # Return a pandas dataframe with training and validation accuracies and losses.
+    return pd.DataFrame(data={
+        "loss": loss_history,
+        "acc": acc_history,
+        "val_loss": val_loss_history,
+        "val_acc": val_acc_history
+    })
+
+
 def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     """
     This function tests a model.
@@ -375,6 +576,59 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
 
     # Return the metrics.
     return precision, recall, fscore
+
+
+def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
+    
+    precision_metric = Precision(task="multiclass", num_classes=len(labels_map))
+    recall_metric = Recall(task="multiclass", num_classes=len(labels_map))
+    fscore_metric = F1Score(task="multiclass", num_classes=len(labels_map))
+
+    predictions, labels = [], []
+
+    with torch.no_grad():
+        for item in test_data:
+            image = item[0].unsqueeze(0).to(device)
+            label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
+            highest_score = float('-inf')
+            image_class = -1
+            print(len(one_shot_data))
+            for anchor in one_shot_data:
+                anchor_image = anchor[0].unsqueeze(0).to(device)
+                pred_score = model(image, anchor_image)
+                if pred_score > highest_score:
+                    highest_score = pred_score
+                    image_class = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == anchor[1])
+            
+            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {highest_score.item()}')
+            
+            predictions.append(image_class)
+            labels.append(label)
+
+            precision_metric.update(torch.tensor([image_class]), torch.tensor([label]))
+            recall_metric.update(torch.tensor([image_class]), torch.tensor([label]))
+            fscore_metric.update(torch.tensor([image_class]), torch.tensor([label]))
+
+        avg_precision = precision_metric.compute()
+        avg_recall = recall_metric.compute()
+        avg_fscore = fscore_metric.compute()
+
+        matrix = metrics.confusion_matrix(labels, predictions)
+        df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
+        df_matrix.to_csv(path_to_save_matrix_csv)
+        plt.figure()
+        sn.heatmap(df_matrix, annot=True, yticklabels=True, xticklabels=True)
+        plt.title("Confusion matrix", fontsize=14)
+        plt.xlabel("Predicted", fontsize=12)
+        plt.ylabel("True", fontsize=12)
+        plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
+
+    print("Final results:")
+    print("Precision:", avg_precision)
+    print("Recall:", avg_recall)
+    print("F1 Score:", avg_fscore)
+
+    return avg_precision, avg_recall, avg_fscore
 
 
 def plot_history(history, path_to_save):

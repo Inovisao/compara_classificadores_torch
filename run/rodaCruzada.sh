@@ -6,7 +6,8 @@
 export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
-ndobras=3  
+ndobras=10  
+rodaSiamesa=true
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)
@@ -49,29 +50,32 @@ mkdir -p ${pastaDobrasResultados}
 for Teste in "${folds[@]}"
 do
   
-    echo 'Preparing test on' ${Teste} '...'
-    rm -rf ${pastaTreino}/*
-    rm -rf ${pastaTeste}/*
-    rm -rf ${pastaResultados}/*
-    
-    cp -R ${pastaDobrasImagens}/${Teste}/* ${pastaTeste} 
+   echo 'Preparing test on' ${Teste} '...'
+   rm -rf ${pastaTreino}/*
+   rm -rf ${pastaTeste}/*
+   rm -rf ${pastaResultados}/*
+   
+   cp -R ${pastaDobrasImagens}/${Teste}/* ${pastaTeste} 
 
-    for outro in "${folds[@]}" 
-    do 
-       if [ ${outro} != ${Teste} ] 
-       then
-          echo 'Adding to train' ${outro} 
-          cp -R ${pastaDobrasImagens}/${outro}/* ${pastaTreino} 
-       fi   
+   for outro in "${folds[@]}" 
+   do 
+      if [ ${outro} != ${Teste} ] 
+      then
+         echo 'Adding to train' ${outro} 
+         cp -R ${pastaDobrasImagens}/${outro}/* ${pastaTreino} 
+      fi   
 
 
-    done
-    
-    run=${Teste#*_}
-    bash ./roda.sh $run
-    
-    mkdir -p ${pastaDobrasResultados}/${Teste}
-    mv ${pastaResultados}/* ${pastaDobrasResultados}/${Teste}   
+   done
+   
+   run=${Teste#*_}
+   bash ./roda.sh $run
+   if [ "$rodaSiamesa" = true ]
+   then
+      bash ./rodaSiamesa.sh $run
+   fi
+   mkdir -p ${pastaDobrasResultados}/${Teste}
+   mv ${pastaResultados}/* ${pastaDobrasResultados}/${Teste}   
     
 
 done

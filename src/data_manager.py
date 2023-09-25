@@ -5,10 +5,12 @@
     This file contains a class which is responsible for managing the data for the model.
 """ 
 
-from hyperparameters import DATA_HYPERPARAMETERS, DATA_AUGMENTATION, MODEL_HYPERPARAMETERS
+from hyperparameters import DATA_HYPERPARAMETERS, DATA_AUGMENTATION, SIAMESE_DATA_HYPERPARAMETERS
 
 import numpy as np
 import os
+import cv2
+import glob
 import pathlib
 from PIL import Image
 from sklearn.model_selection import train_test_split
@@ -54,6 +56,68 @@ def get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
 
     return transforms_pipeline
 
+
+def preprocess(file_path):
+    img = cv2.imread(file_path)
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    resized_img = cv2.resize(img, (105, 105))
+    resized_img = cv2.cvtColor(resized_img, cv2.COLOR_BGR2RGB)
+    resized_img = resized_img.astype(np.float32) / 255.0
+    transformed_img = transform(resized_img)
+    return transformed_img
+
+
+class SiameseDataset(Dataset):
+    def __init__(self, anchor_paths, validation_paths):
+        self.anchor_paths, self.validation_paths, self.labels = self.generate_balanced_pairs(anchor_paths, validation_paths)
+
+    def __len__(self):
+        return len(self.anchor_paths)
+
+    def __getitem__(self, index):
+        anchor_img = preprocess(self.anchor_paths[index])
+        validation_img = preprocess(self.validation_paths[index])
+        label = self.labels[index]
+        return anchor_img, validation_img, label
+
+    def generate_balanced_pairs(self, anchor_paths, validation_paths):
+        pairs_by_class = {}
+        for anchor, validation in zip(anchor_paths, validation_paths):
+            anchor_class = os.path.basename(os.path.dirname(anchor))
+            validation_class = os.path.basename(os.path.dirname(validation))
+            
+            if anchor_class not in pairs_by_class:
+                pairs_by_class[anchor_class] = {"positive": [], "negative": []}
+            
+            if anchor_class == validation_class:
+                pairs_by_class[anchor_class]["positive"].append((anchor, validation, 1))
+            else:
+                pairs_by_class[anchor_class]["negative"].append((anchor, validation, 0))
+        
+        anchor_output = []
+        validation_output = []
+        label_output = []
+        
+        for class_data in pairs_by_class.values():
+            positive_samples = class_data["positive"]
+            negative_samples = class_data["negative"]
+            
+            min_samples = min(len(positive_samples), len(negative_samples))
+            
+            for anchor, validation, label in positive_samples[:min_samples]:
+                anchor_output.append(anchor)
+                validation_output.append(validation)
+                label_output.append(label)
+            
+            for anchor, validation, label in negative_samples[:min_samples]:
+                anchor_output.append(anchor)
+                validation_output.append(validation)
+                label_output.append(label)
+        
+        return anchor_output, validation_output, label_output
+    
 
 class CustomDataset(Dataset):
     def __init__(self, data_dir, filenames, labels, transform=None):
@@ -193,3 +257,35 @@ def get_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     print_data_informations(train_dataset, val_dataset, test_dataset, train_dataloader)
 
     return train_dataloader, val_dataloader, test_dataloader
+
+def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"], 
+                     val_split=SIAMESE_DATA_HYPERPARAMETERS["VAL_SPLIT"], 
+                     batch_size=SIAMESE_DATA_HYPERPARAMETERS["BATCH_SIZE"]):
+
+    TRAIN_PATH = os.path.join(data_dir,'train')
+    TEST_PATH = os.path.join(data_dir,'test')
+    train_paths = [file_path for root, dirs, files in os.walk(TRAIN_PATH) for file_path in glob.glob(os.path.join(root, '*.png'))]
+    all_pairs = np.array(np.meshgrid(train_paths, train_paths)).T.reshape(-1, 2)
+    all_pairs = all_pairs[all_pairs[:, 0] != all_pairs[:, 1]]
+    anchor_paths = all_pairs[:, 0]
+    validation_paths = all_pairs[:, 1]
+    dataset = SiameseDataset(anchor_paths, validation_paths)
+    train_size = int((1-val_split) * len(dataset))
+    val_size = (len(dataset) - train_size)
+    train_data, val_data= torch.utils.data.random_split(dataset, [train_size, val_size])
+
+    train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    val_data_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+    one_shot_data = [[preprocess(files_in_subfolder[0]), os.path.basename(sub_folder)] for sub_folder in os.listdir(TRAIN_PATH) if os.path.isdir(os.path.join(TRAIN_PATH, sub_folder)) and (files_in_subfolder := glob.glob(os.path.join(TRAIN_PATH, sub_folder, '*.png')))]
+    test_data = [[preprocess(file), os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.png'))]
+
+    total_images = len(train_data) + len(val_data) + len(test_data)
+    print(f"Total number of images: {total_images}")
+    print(f"Number of training images: {len(train_data)} ({100 * len(train_data) / total_images:>2f}%)")
+    print(f"Number of validation images: {len(val_data)} ({100 * len(val_data) / total_images:>2f}%)")
+    print(f"Number of test images: {len(test_data)} ({100 * len(test_data) / total_images:>2f}%)")
+    
+    labels_map = DATA_HYPERPARAMETERS["CLASSES"]
+    print(f"\nClasses: {labels_map}")
+
+    return train_data_loader, val_data_loader, test_data, one_shot_data
