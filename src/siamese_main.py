@@ -106,7 +106,7 @@ def main():
     train_dataloader, val_dataloader, test_data, one_shot_data = data_manager.get_siamese_data()
     
     # Give the model a name.
-    model_name = "siamese" + str(args["run"]) + "_" + str(args["architecture"]) + \
+    model_name = "siamese_" + str(args["run"]) + "_" + str(args["architecture"]) + \
         "_" + str(args["optimizer"]) + "_" + str(args["learning_rate"])
 
     # Create a path to save the model.
@@ -134,17 +134,22 @@ def main():
     # Load the best weights for testing.
     model.load_state_dict(torch.load(path_to_save))
 
+    path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"    
+    path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
+
     # Test, save the results and get precision, recall and fscore.
     precision, recall, fscore = helper_functions.test_siamese(test_data=test_data,
                                                       one_shot_data=one_shot_data, 
                                                       model=model,
+                                                      path_to_save_matrix_csv=path_to_matrix_csv, 
+                                                      path_to_save_matrix_png=path_to_matrix_png,
                                                       labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"])
 
     
     # Create a string with run, learning rate, architecture,
     # optimizer, precision, recall and fscore, to append to the csv file:
-    results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
+    results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + "siamese_" + str(args["architecture"]) + \
+        "," + str(args["optimizer"]) + "," + str(precision.item()) + "," + str(recall.item()) + "," + str(fscore.item()) + "\n"
 
     # Open file, write and close.
     f = open("../results_dl/results.csv", "a")
@@ -153,5 +158,4 @@ def main():
 
 # Call the main function.
 if __name__ == "__main__":
-    print('entrou 3')
     main()

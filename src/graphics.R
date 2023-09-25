@@ -25,7 +25,8 @@ original_arch_name <- list("alexnet",
                            "sebotnet33ts_256",
                            "swinv2_base_window16_256",
                            "vgg19",
-                           "vit_relpos_base_patch32_plus_rpn_256")
+                           "vit_relpos_base_patch32_plus_rpn_256",
+                           "default_siamese")
 
 arch_nickname <- list("alexnet",
                       "coat",
@@ -37,7 +38,8 @@ arch_nickname <- list("alexnet",
                       "SEBotNet",
                       "SwinV2",
                       "Vgg19",
-                      "ViTRelPosRPN")
+                      "ViTRelPosRPN",
+                      "default_siamese")
 
 
 original_optim_name <- list("sgd", "adam", "adagrad")

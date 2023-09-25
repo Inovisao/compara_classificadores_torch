@@ -578,11 +578,13 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     return precision, recall, fscore
 
 
-def test_siamese(test_data, one_shot_data, model, labels_map):
+def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     
     precision_metric = Precision(task="multiclass", num_classes=len(labels_map))
     recall_metric = Recall(task="multiclass", num_classes=len(labels_map))
     fscore_metric = F1Score(task="multiclass", num_classes=len(labels_map))
+
+    predictions, labels = [], []
 
     with torch.no_grad():
         for item in test_data:
@@ -600,6 +602,9 @@ def test_siamese(test_data, one_shot_data, model, labels_map):
             
             print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {highest_score.item()}')
             
+            predictions.append(image_class)
+            labels.append(label)
+
             precision_metric.update(torch.tensor([image_class]), torch.tensor([label]))
             recall_metric.update(torch.tensor([image_class]), torch.tensor([label]))
             fscore_metric.update(torch.tensor([image_class]), torch.tensor([label]))
@@ -608,6 +613,15 @@ def test_siamese(test_data, one_shot_data, model, labels_map):
         avg_recall = recall_metric.compute()
         avg_fscore = fscore_metric.compute()
 
+        matrix = metrics.confusion_matrix(labels, predictions)
+        df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
+        df_matrix.to_csv(path_to_save_matrix_csv)
+        plt.figure()
+        sn.heatmap(df_matrix, annot=True, yticklabels=True, xticklabels=True)
+        plt.title("Confusion matrix", fontsize=14)
+        plt.xlabel("Predicted", fontsize=12)
+        plt.ylabel("True", fontsize=12)
+        plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
 
     print("Final results:")
     print("Precision:", avg_precision)
