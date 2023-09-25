@@ -25,8 +25,7 @@ architectures = {
     "resnet18": arch.get_resnet18,
     "resnet50": arch.get_resnet50,
     "ielt": arch.get_ielt,
-
-
+    "default_siamese": arch.get_default_siamese
 }
 
 optimizers = {
@@ -51,7 +50,6 @@ gradcam_layer_getters = {
     "resnet18": arch.get_resnet18_gradcam_layer,
     "resnet50": arch.get_resnet50_gradcam_layer,
     "ielt": arch.get_ielt_gradcam_layer
-
 }
 
 
