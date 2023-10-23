@@ -610,8 +610,11 @@ def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_
             fscore_metric.update(torch.tensor([image_class]), torch.tensor([label]))
 
         avg_precision = precision_metric.compute()
+        avg_precision = avg_precision.item()
         avg_recall = recall_metric.compute()
+        avg_recall = avg_recall.item()
         avg_fscore = fscore_metric.compute()
+        avg_fscore = avg_fscore.item()
 
         matrix = metrics.confusion_matrix(labels, predictions)
         df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
