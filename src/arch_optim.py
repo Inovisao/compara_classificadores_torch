@@ -21,9 +21,11 @@ architectures = {
     "sebotnet33ts_256": arch.get_sebotnet33ts_256,
     "lamhalobotnet50ts_256": arch.get_lamhalobotnet50ts_256,
     "swinv2_base_window16_256": arch.get_swinv2_base_window16_256,
+    "swinv2_cr_base_224": arch.get_swinv2_cr_base_224,
     "convnext_base": arch.get_convnext_base,
     "resnet18": arch.get_resnet18,
     "resnet50": arch.get_resnet50,
+    "resnet101": arch.get_resnet101,
     "ielt": arch.get_ielt,
     "default_siamese": arch.get_default_siamese
 }
@@ -32,6 +34,7 @@ optimizers = {
     "adam": optim.adam,
     "sgd": optim.sgd,
     "adagrad": optim.adagrad,
+    "adamw": optim.adamw,
     "lion": optim.lion,
     "sam": optim.sam,
 }
@@ -46,10 +49,13 @@ gradcam_layer_getters = {
     "sebotnet33ts_256": arch.get_sebotnet33ts_256_gradcam_layer,
     "lamhalobotnet50ts_256": arch.get_lamhalobotnet50ts_256_gradcam_layer,
     "swinv2_base_window16_256": arch.get_swinv2_base_window16_256_gradcam_layer,
+    "swinv2_cr_base_224": arch.get_swinv2_cr_base_224_gradcam_layer,
     "convnext_base": arch.get_convnext_base_gradcam_layer,
     "resnet18": arch.get_resnet18_gradcam_layer,
     "resnet50": arch.get_resnet50_gradcam_layer,
-    "ielt": arch.get_ielt_gradcam_layer
+    "resnet101": arch.get_resnet101_gradcam_layer,
+    "ielt": arch.get_ielt_gradcam_layer,
+    "default_siamese": arch.get_siamese_gradcam_layer
 }
 
 

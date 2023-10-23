@@ -62,7 +62,7 @@ def preprocess(file_path):
     transform = transforms.Compose([
         transforms.ToTensor(),
     ])
-    resized_img = cv2.resize(img, (105, 105))
+    resized_img = cv2.resize(img, (SIAMESE_DATA_HYPERPARAMETERS["IMAGE_SIZE"], SIAMESE_DATA_HYPERPARAMETERS["IMAGE_SIZE"]))
     resized_img = cv2.cvtColor(resized_img, cv2.COLOR_BGR2RGB)
     resized_img = resized_img.astype(np.float32) / 255.0
     transformed_img = transform(resized_img)

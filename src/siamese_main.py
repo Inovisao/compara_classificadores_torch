@@ -149,7 +149,7 @@ def main():
     # Create a string with run, learning rate, architecture,
     # optimizer, precision, recall and fscore, to append to the csv file:
     results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + "siamese_" + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(precision.item()) + "," + str(recall.item()) + "," + str(fscore.item()) + "\n"
+        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
 
     # Open file, write and close.
     f = open("../results_dl/results.csv", "a")
