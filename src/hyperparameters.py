@@ -12,12 +12,12 @@ NUM_CLASSES = len(CLASSES)
 
 # Hyperparameters pertaining to the data to be passed into the model.
 DATA_HYPERPARAMETERS = {
-    "IMAGE_SIZE": 224,
-    "BATCH_SIZE": 8,
+    "IMAGE_SIZE": 105,
+    "BATCH_SIZE": 16,
     "VAL_SPLIT": 0.2,
-    "USE_DATA_AUGMENTATION": True,
+    "USE_DATA_AUGMENTATION": False,
     "DATA_SCALE_FACTOR": 1, # This divides the data when it is read; useful for scaling (e.g., to [0, 1]) 
-    "NORMALIZE": True,
+    "NORMALIZE": False,
     "IN_CHANNELS": 3,
     "ROOT_DATA_DIR": ROOT_DATA_DIR,
     "TRAIN_DATA_DIR": TRAIN_DATA_DIR,
@@ -28,7 +28,7 @@ DATA_HYPERPARAMETERS = {
 
 
 SIAMESE_DATA_HYPERPARAMETERS = {
-    "IMAGE_SIZE": 105,
+    "IMAGE_SIZE": 224,
     "BATCH_SIZE": 16,
     "VAL_SPLIT": 0.2,
     "USE_DATA_AUGMENTATION": False,
@@ -48,9 +48,9 @@ MODEL_HYPERPARAMETERS = {
     "NUM_EPOCHS": 1000,
     "PATIENCE": 30,
     "TOLERANCE": 0.1,
-    "USE_TRANSFER_LEARNING": True,
+    "USE_TRANSFER_LEARNING": False,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "CREATE_GRADCAM": True, # Avoid using, I'll do something better later
+    "CREATE_GRADCAM": False, # Avoid using, I'll do something better later
 }
 
 

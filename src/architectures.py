@@ -149,10 +149,22 @@ def get_swinv2_base_window16_256(in_channels, out_classes, pretrained):
                               num_classes=out_classes)
     
     return model
-
+    
 
 def get_swinv2_base_window16_256_gradcam_layer(model):
     print("Gradcam not available for swinv2_base_window16_256.")
+
+
+def get_swinv2_cr_base_224(in_channels, out_classes, pretrained):
+    model = timm.create_model("swinv2_cr_base_224",
+                              pretrained=pretrained,
+                              in_chans=in_channels,
+                              num_classes=out_classes)
+    return model
+
+
+def get_swinv2_cr_base_224_gradcam_layer(model):
+    print("Gradcam not available for winv2_cr_base_224.")
 
 
 def get_convnext_base(in_channels, out_classes, pretrained):
@@ -192,6 +204,18 @@ def get_resnet50(in_channels, out_classes, pretrained):
     return model
 
 def get_resnet50_gradcam_layer(model):
+    return model.layer4[1].conv2
+
+
+def get_resnet101(in_channels, out_classes, pretrained):
+    model = models.resnet101(weights="DEFAULT")
+    model.fc = nn.Linear(in_features=2048, out_features=out_classes, bias=True)
+    model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    
+    return model
+
+
+def get_resnet101_gradcam_layer(model):
     return model.layer4[1].conv2
 
 
@@ -238,7 +262,7 @@ def get_default_siamese(in_channels, out_classes, pretrained):
     )
     return embedding_model
 
-def get_siamese_gradcam(model):
+def get_siamese_gradcam_layer(model):
     print("GradCAM not available for Siamese.")
 
 

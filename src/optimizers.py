@@ -48,6 +48,16 @@ def adagrad(params, learning_rate):
                          maximize=False)
 
 
+def adamw(params, learning_rate):
+    return optim.AdamW(params,
+                       lr=learning_rate,
+                       betas=(0.9, 0.99),
+                       eps=1e-10,
+                       weight_decay=0,
+                       foreach=None,
+                       maximize=False)
+
+
 def lion(params, learning_rate):
     return Lion(params=params, 
                 lr=learning_rate, 
