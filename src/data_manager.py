@@ -65,7 +65,7 @@ def preprocess(file_path):
     _, threshold = cv2.threshold(gray_img, 1, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) > 0:
-        x, y, w, h = cv2.boundingRect(contours[0])
+        x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
         img = img[y:y+h, x:x+w]
     resized_img = cv2.resize(img, (SIAMESE_DATA_HYPERPARAMETERS["IMAGE_SIZE"], SIAMESE_DATA_HYPERPARAMETERS["IMAGE_SIZE"]))
     resized_img = resized_img.astype(np.float32) / 255.0
