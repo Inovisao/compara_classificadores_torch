@@ -268,7 +268,21 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
 
     TRAIN_PATH = os.path.join(data_dir,'train')
     TEST_PATH = os.path.join(data_dir,'test')
-    train_paths = [file_path for root, dirs, files in os.walk(TRAIN_PATH) for file_path in glob.glob(os.path.join(root, '*.png'))]
+    if SIAMESE_DATA_HYPERPARAMETERS["CLASS_SAMPLE_SIZE"] > -1:
+        train_paths = []
+        class_sample_count = {}
+        for root, dirs, files in os.walk(TRAIN_PATH):
+            for file_path in glob.glob(os.path.join(root, '*.jpg')):
+                class_name = os.path.basename(os.path.dirname(file_path))
+                if class_name not in class_sample_count:
+                    class_sample_count[class_name] = 0
+                if class_sample_count[class_name] < SIAMESE_DATA_HYPERPARAMETERS["CLASS_SAMPLE_SIZE"]:
+                    train_paths.append(file_path)
+                    class_sample_count[class_name] += 1
+                    if len(train_paths) >= SIAMESE_DATA_HYPERPARAMETERS["NUM_CLASSES"] * SIAMESE_DATA_HYPERPARAMETERS["CLASS_SAMPLE_SIZE"]:
+                        break
+    else:
+        train_paths = [file_path for root, dirs, files in os.walk(TRAIN_PATH) for file_path in glob.glob(os.path.join(root, '*.jpg'))]
     all_pairs = np.array(np.meshgrid(train_paths, train_paths)).T.reshape(-1, 2)
     all_pairs = all_pairs[all_pairs[:, 0] != all_pairs[:, 1]]
     anchor_paths = all_pairs[:, 0]
@@ -280,8 +294,8 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
 
     train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     val_data_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-    one_shot_data = [[preprocess(files_in_subfolder[0]), os.path.basename(sub_folder)] for sub_folder in os.listdir(TRAIN_PATH) if os.path.isdir(os.path.join(TRAIN_PATH, sub_folder)) and (files_in_subfolder := glob.glob(os.path.join(TRAIN_PATH, sub_folder, '*.png')))]
-    test_data = [[preprocess(file), os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.png'))]
+    one_shot_data = [[preprocess(files_in_subfolder[0]), os.path.basename(sub_folder)] for sub_folder in os.listdir(TRAIN_PATH) if os.path.isdir(os.path.join(TRAIN_PATH, sub_folder)) and (files_in_subfolder := glob.glob(os.path.join(TRAIN_PATH, sub_folder, '*.jpg')))]
+    test_data = [[preprocess(file), os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.jpg'))]
 
     total_images = len(train_data) + len(val_data) + len(test_data)
     print(f"Total number of images: {total_images}")
