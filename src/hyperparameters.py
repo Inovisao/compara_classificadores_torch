@@ -47,11 +47,10 @@ SIAMESE_DATA_HYPERPARAMETERS = {
 # No learning rate here. The lr must be set in roda.sh.
 MODEL_HYPERPARAMETERS = {
     "NUM_EPOCHS": 1000,
-    "PATIENCE": 30,
+    "PATIENCE": 300,
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": False,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "CREATE_GRADCAM": False, # Avoid using, I'll do something better later
 }
 
 
@@ -62,7 +61,6 @@ SIAMESE_MODEL_HYPERPARAMETERS = {
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": False,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "CREATE_GRADCAM": False, # Avoid using, I'll do something better later
     "ACC_THRESHOLD": 0.7,
 }
 

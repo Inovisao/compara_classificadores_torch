@@ -5,8 +5,6 @@ import argparse
 from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS
 import matplotlib.pyplot as plt
 import numpy as np
-from omnixai.data.image import Image
-from omnixai.explainers.vision.specific.gradcam.pytorch.gradcam import GradCAM
 import os
 import pandas as pd
 import seaborn as sn
@@ -697,70 +695,3 @@ def plot_history(history, path_to_save):
     plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
 
 
-def create_gradcam(dataloader, model, target_layer, subset, labels_map, path_to_save):
-    """
-    This function creates the GradCAM images for images in the dataloader given as argument.
-    Args:
-        dataloader: the dataloader with the images for which the GradCAM files are to be created.
-        model: the model to be explained.
-        target_layer: the layer with which the GradCAM visualizations are to be created. According to the
-        GradCAM documenation, this is usually the last convolutional layer of the model. As each model has a different
-        architecture up to last layer (at least in PyTorch), I did not think of a way of making this non-parametric,
-        nor do I think I should. Therefore, this must be passed as an argument.
-        subset: the name of the subset (test). This is used to name the files without confusion.
-        labels_map: a list with the labels. The indexes are used to convert predictions into class names.
-        path_to_save: the directory to save the GradCAM files.
-
-    Returns: nothing. It saves the files in the specified directory as .png image files.
-
-    """
-    # Iterate through the batches.
-    for X, y, original_file in dataloader:
-
-        # Send the images, the labels and the model to the GPU.
-        X, y = X.to(device, torch.float), y.to(device)
-        model = model.to(device)
-
-        # Get predictions for the model.
-        preds = model(X)
-
-        # Iterate through the images to generate the GradCAM files.
-        for i in range(len(X)):
-            # Get one image and adjust the pixel values.
-            one_image = X[i, :, :, :].cpu().numpy() * 255.
-
-            # Get one image as an Image object.
-            one_image = Image(one_image, batched=False, channel_last=False)
-
-            # Compose a transform to turn the image into a tensor.
-            transform = get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
-                                       data_augmentation=False,
-                                       for_gradcam=True)
-
-            # Instantiate a GradCAM object.
-            explainer = GradCAM(model=model,
-                                target_layer=target_layer,
-                                preprocess_function=lambda ims: torch.stack([transform(im.to_pil()) for im in ims]))
-
-            # Explain one image.
-            explanations = explainer.explain(one_image, y[i].item())
-
-            # Plot gradcam.
-            plot = explanations.plot(class_names=labels_map)
-
-            # Set supertitle.
-            plot[0].suptitle(f"Label: {labels_map[y[i].item()]}. Predicted as: {labels_map[torch.argmax(preds[i])]}.",
-                             y=0.85,
-                             fontsize=14)
-
-            # Create the filename.
-            filename = str(subset) + "_" + str(original_file[i]) + "_is_" + str(labels_map[y[i]]) + "_predicted_as_" + \
-                str(labels_map[torch.argmax(preds[i])]) + ".png"
-
-            # Save the plot.
-            plt.savefig(os.path.join(path_to_save, filename))
-
-            # Close the image.
-            plt.close()
-
-        torch.cuda.empty_cache()

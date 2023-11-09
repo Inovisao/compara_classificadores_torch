@@ -133,39 +133,6 @@ def main():
     f.write(results)
     f.close()
 
-    # Create the GradCAM files.
-    if MODEL_HYPERPARAMETERS["CREATE_GRADCAM"] and DATA_HYPERPARAMETERS["IN_CHANNELS"] == 3 and args["architecture"] != "ielt":
-        
-        test_dataloader.dataset.transform = transforms.Compose([
-            transforms.Resize((DATA_HYPERPARAMETERS["IMAGE_SIZE"], DATA_HYPERPARAMETERS["IMAGE_SIZE"]))
-        ])
-
-        # Get the target layer for the GradCAM:
-        gradcam_target_layer = gradcam_layer_getters[args["architecture"]](model=model)
-
-        # Create the name of the folder to save the images.
-        gradcam_filepath = "../results/GradCAM_" + str(args["run"]) + "," + str(args["learning_rate"]) + "," + \
-            str(args["architecture"]) + "," + str(args["optimizer"])
-
-        # Create the directory for the GradCAM files.
-        os.mkdir(path=gradcam_filepath)
-
-        print("Generating GradCAM files for the test images...")
-
-        helper_functions.create_gradcam(dataloader=test_dataloader,
-                                        model=model,
-                                        target_layer=gradcam_target_layer,
-                                        subset="test",
-                                        labels_map=DATA_HYPERPARAMETERS["CLASSES"],
-                                        path_to_save=gradcam_filepath)
-    elif DATA_HYPERPARAMETERS["IN_CHANNELS"] != 3:
-        print("GradCAM available only for images with 3 channels.")
-    elif args["architecture"] == "ielt":
-        print("GradCAM not available for the IELT architecture.")
-    else:
-        print("Skipping GradCAM...")
-
-    # Confirm that execution has been properly completed.
     print("\nFinished execution.")
 
 # Call the main function.

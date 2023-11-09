@@ -218,7 +218,28 @@ def get_resnet101(in_channels, out_classes, pretrained):
 def get_resnet101_gradcam_layer(model):
     return model.layer4[1].conv2
 
+def get_mobilenetV3(in_channels, out_classes, pretrained):
+    model = models.mobilenet_v3_large(pretrained=pretrained)
+    model.classifier[3]=nn.Linear(in_features=1280, out_features=out_classes, bias=True)
+    model.features[0][0] = nn.Conv2d(in_channels, 16, kernel_size=(3, 3), stride=(2, 2),padding=(1, 1), bias=False)
+    return model
 
+def get_mobilenetV3_gradcam_layer(model):
+    return model.features[-1]
+
+
+
+ def get_densenet201(in_channels, out_classes, pretrained):
+    model = models.densenet201(weights="DEFAULT")
+    model.fc = nn.Linear(in_features=1920, out_features=out_classes, bias=True)
+    model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    
+    return model
+
+def get_densenet201_gradcam_layer(model):
+    return model.features.transition3.conv
+    
+       
 def get_ielt(in_channels, out_classes, pretrained):
     
     if not os.path.exists("./IELT/pretrained"):

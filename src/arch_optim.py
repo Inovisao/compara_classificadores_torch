@@ -27,6 +27,8 @@ architectures = {
     "resnet50": arch.get_resnet50,
     "resnet101": arch.get_resnet101,
     "ielt": arch.get_ielt,
+    "mobilenetv3":get_mobilenetV3,
+    "densenet201":get_densenet201,
     "default_siamese": arch.get_default_siamese
 }
 
@@ -55,6 +57,8 @@ gradcam_layer_getters = {
     "resnet50": arch.get_resnet50_gradcam_layer,
     "resnet101": arch.get_resnet101_gradcam_layer,
     "ielt": arch.get_ielt_gradcam_layer,
+    "mobilenetv3":get_mobilenetV3_gradcam_layer,
+    "densenet201":get_densenet201_gradcam_layer,
     "default_siamese": arch.get_siamese_gradcam_layer
 }
 
