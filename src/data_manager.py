@@ -11,6 +11,7 @@ import numpy as np
 import os
 import cv2
 import glob
+import random
 import pathlib
 from PIL import Image
 from sklearn.model_selection import train_test_split
@@ -283,27 +284,28 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
                         break
     else:
         train_paths = [file_path for root, dirs, files in os.walk(TRAIN_PATH) for file_path in glob.glob(os.path.join(root, '*.jpg'))]
+    random.shuffle(train_paths)
+    train_size = int((1-val_split) * len(train_paths))
+    val_paths = train_paths[train_size:]
+    train_paths = train_paths[:train_size]    
+    print('val_split: ', val_split,' train_path_size:',len(train_paths),'train_size: ', train_size, ' val_size: ', len(val_paths))
     all_pairs = np.array(np.meshgrid(train_paths, train_paths)).T.reshape(-1, 2)
     all_pairs = all_pairs[all_pairs[:, 0] != all_pairs[:, 1]]
     anchor_paths = all_pairs[:, 0]
     validation_paths = all_pairs[:, 1]
-    dataset = SiameseDataset(anchor_paths, validation_paths)
-    train_size = int((1-val_split) * len(dataset))
-    val_size = (len(dataset) - train_size)
-    train_data, val_data= torch.utils.data.random_split(dataset, [train_size, val_size])
-
-    train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    val_data_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+    train_data = SiameseDataset(anchor_paths, validation_paths)
     one_shot_data = [[preprocess(files_in_subfolder[0]), os.path.basename(sub_folder)] for sub_folder in os.listdir(TRAIN_PATH) if os.path.isdir(os.path.join(TRAIN_PATH, sub_folder)) and (files_in_subfolder := glob.glob(os.path.join(TRAIN_PATH, sub_folder, '*.jpg')))]
+    train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=10)
+    val_data = [[preprocess(file_path), os.path.basename(os.path.dirname(file_path))] for file_path in val_paths]
     test_data = [[preprocess(file), os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.jpg'))]
 
-    total_images = len(train_data) + len(val_data) + len(test_data)
+    total_images = train_size + len(val_data) + len(test_data)
     print(f"Total number of images: {total_images}")
-    print(f"Number of training images: {len(train_data)} ({100 * len(train_data) / total_images:>2f}%)")
+    print(f"Number of training images: {train_size} ({100 * train_size / total_images:>2f}%)")
     print(f"Number of validation images: {len(val_data)} ({100 * len(val_data) / total_images:>2f}%)")
     print(f"Number of test images: {len(test_data)} ({100 * len(test_data) / total_images:>2f}%)")
     
     labels_map = DATA_HYPERPARAMETERS["CLASSES"]
     print(f"\nClasses: {labels_map}")
 
-    return train_data_loader, val_data_loader, test_data, one_shot_data
+    return train_data_loader, val_data, test_data, one_shot_data

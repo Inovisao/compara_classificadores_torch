@@ -229,7 +229,7 @@ def get_mobilenetV3_gradcam_layer(model):
 
 
 
- def get_densenet201(in_channels, out_classes, pretrained):
+def get_densenet201(in_channels, out_classes, pretrained):
     model = models.densenet201(weights="DEFAULT")
     model.fc = nn.Linear(in_features=1920, out_features=out_classes, bias=True)
     model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)

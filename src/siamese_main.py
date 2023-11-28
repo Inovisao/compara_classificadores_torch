@@ -9,36 +9,49 @@ from arch_optim import architectures, optimizers, gradcam_layer_getters, get_arc
 import data_manager
 import helper_functions
 from hyperparameters import SIAMESE_DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
-
+import pandas as pd
 import torch
 from torch import nn
 from torch.nn.functional import sigmoid
 from torchvision import transforms
 
-class L1Dist(nn.Module):
-    def __init__(self):
-        super(L1Dist, self).__init__()
+class ContrastiveLoss(nn.Module):
+    def __init__(self, margin, device):
+        super(ContrastiveLoss, self).__init__()
+        self.margin = margin
+        self.device = device
 
-    def forward(self, input_embedding, validation_embedding):
-        return torch.abs(input_embedding - validation_embedding)
+    def forward(self, output1, output2, target):
+        euclidean_distance = torch.nn.functional.pairwise_distance(output1, output2)
+        loss_contrastive = torch.mean((target) * torch.log(torch.pow((1+(1/euclidean_distance)),euclidean_distance)) +
+                                      (1 - target) * (1-torch.log(torch.pow((1+(1/euclidean_distance)),euclidean_distance))))
+
+        return loss_contrastive
+
+# class L1Dist(nn.Module):
+#     def __init__(self):
+#         super(L1Dist, self).__init__()
+
+#     def forward(self, input_embedding, validation_embedding):
+#         return torch.abs(input_embedding - validation_embedding)
     
-class SiameseNetwork(nn.Module):
-    def __init__(self, embedding_model):
-        super(SiameseNetwork, self).__init__()
-        self.model_sigmoid = nn.Sigmoid()
-        self.embedding = nn.Sequential(embedding_model,self.
-                                       model_sigmoid)
-        self.siamese_layer = L1Dist()
-        self.classifier = nn.Linear(4096, 1)
-        self.model_output = nn.Sigmoid()
+# class SiameseNetwork(nn.Module):
+#     def __init__(self, embedding_model):
+#         super(SiameseNetwork, self).__init__()
+#         self.model_sigmoid = nn.Sigmoid()
+#         self.embedding = nn.Sequential(embedding_model,self.
+#                                        model_sigmoid)
+#         self.siamese_layer = L1Dist()
+#         self.classifier = nn.Linear(4096, 1)
+#         self.model_output = nn.Sigmoid()
 
-    def forward(self, input_image, validation_image):
-        input_embedding = self.embedding(input_image)
-        validation_embedding = self.embedding(validation_image)
-        distances = self.siamese_layer(input_embedding, validation_embedding)
-        classifier_output = self.classifier(distances)
-        output = self.model_output(classifier_output)
-        return output
+#     def forward(self, input_image, validation_image):
+#         input_embedding = self.embedding(input_image)
+#         validation_embedding = self.embedding(validation_image)
+#         distances = self.siamese_layer(input_embedding, validation_embedding)
+#         classifier_output = self.classifier(distances)
+#         output = self.model_output(classifier_output)
+#         return output
 
 def main():
     # Use cuda if it is available. If not, use the CPU.
@@ -65,12 +78,11 @@ def main():
     #     "No function to get the target layer for the GradCAM found."
 
     # Get the model.
-    embedding = get_architecture(args["architecture"], 
+    model = get_architecture(args["architecture"], 
                              in_channels=SIAMESE_DATA_HYPERPARAMETERS["IN_CHANNELS"], 
                              out_classes=4096, 
                              pretrained=SIAMESE_MODEL_HYPERPARAMETERS["USE_TRANSFER_LEARNING"])
     
-    model = SiameseNetwork(embedding)
     model = model.to(device)    
     
     # Send the model to the correct device.
@@ -89,8 +101,6 @@ def main():
     print(DATA_AUGMENTATION)
     print("===================================")
 
-
-
     # Get the optimizer.
     optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args["learning_rate"])
     
@@ -100,10 +110,10 @@ def main():
         optimizer.__name__ = args["optimizer"]
         
     # Get the loss function.
-    loss_function = nn.BCELoss()
+    loss_function = ContrastiveLoss(margin=SIAMESE_MODEL_HYPERPARAMETERS["MARGIN"],device=SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"])
     
     # Get the dataloaders.
-    train_dataloader, val_dataloader, test_data, one_shot_data = data_manager.get_siamese_data()
+    train_dataloader, val_data, test_data, one_shot_data = data_manager.get_siamese_data()
     
     # Give the model a name.
     model_name = "siamese_" + str(args["run"]) + "_" + str(args["architecture"]) + \
@@ -113,7 +123,8 @@ def main():
     path_to_save = "../model_checkpoints/" + model_name + ".pth"
     
     history = helper_functions.fit_siamese(train_dataloader=train_dataloader,
-                                   val_dataloader=val_dataloader,
+                                   val_data=val_data,
+                                   one_shot_data=one_shot_data,
                                    model=model,
                                    optimizer=optimizer,
                                    loss_fn=loss_function,
@@ -127,9 +138,6 @@ def main():
     path_to_history_png = "../results/history/" + model_name + "_HISTORY.png"
 
     # Save the history as csv.
-    history.to_csv(path_to_history_csv)
-    # Plot the history and save as png.
-    helper_functions.plot_history(history, path_to_history_png)
     
     # Load the best weights for testing.
     model.load_state_dict(torch.load(path_to_save))
@@ -140,6 +148,7 @@ def main():
     # Test, save the results and get precision, recall and fscore.
     precision, recall, fscore = helper_functions.test_siamese(test_data=test_data,
                                                       one_shot_data=one_shot_data, 
+                                                      loss_fn=loss_function,
                                                       model=model,
                                                       path_to_save_matrix_csv=path_to_matrix_csv, 
                                                       path_to_save_matrix_png=path_to_matrix_png,
@@ -151,6 +160,10 @@ def main():
     results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + "siamese_" + str(args["architecture"]) + \
         "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
 
+    history.to_csv(path_to_history_csv, sep =',')
+    # history = pd.read_csv(history, delimiter=',')
+    # Plot the history and save as png.
+    helper_functions.plot_history(history, path_to_history_png)
     # Open file, write and close.
     f = open("../results_dl/results.csv", "a")
     f.write(results)

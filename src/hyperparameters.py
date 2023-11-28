@@ -58,10 +58,11 @@ MODEL_HYPERPARAMETERS = {
 SIAMESE_MODEL_HYPERPARAMETERS = {
     "NUM_EPOCHS": 1000,
     "PATIENCE": 10,
-    "TOLERANCE": 0.1,
+    "TOLERANCE": 0.0001,
     "USE_TRANSFER_LEARNING": False,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "ACC_THRESHOLD": 0.7,
+    "MARGIN": 1,
+    "THRESHOLD": 0.3,
 }
 
 
