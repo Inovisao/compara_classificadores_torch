@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS
+from hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS, SIAMESE_MODEL_HYPERPARAMETERS, SIAMESE_DATA_HYPERPARAMETERS
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -318,32 +318,39 @@ def train_siamese(dataloader, model, loss_fn, optimizer):
         anchor = batch[0].to(device)
         validation = batch[1].to(device)
         labels = batch[2].float().to(device)
-        outputs = model(anchor, validation)
+        anchor_output = model(anchor)
+        validation_output = model(validation)
         
-        loss = loss_fn(outputs.squeeze(), labels)
-        train_loss += loss_fn(outputs.squeeze(), labels).item()
-        num_correct += ((outputs.squeeze() >= SIAMESE_MODEL_HYPERPARAMETERS["ACC_THRESHOLD"]) == labels).type(torch.float).sum().item()
-        
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+        loss = loss_fn(anchor_output, validation_output, labels)
+        train_loss += loss.item()
+        num_correct += (loss <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
+    
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+    print('Training statistics:')
+    print('Total number of images: ',size)
+    print('Total number of correct predictions: ',num_correct)
 
     # Calculate the mean loss during training.
     train_loss /= num_batches
+    print('Mean loss: ',train_loss)
 
     # Calculate the accuracy during training.
     train_accuracy = num_correct / size
+    print('Accuracy: ',train_accuracy)
 
     # Return training loss and accuracy.
     return train_loss, train_accuracy
 
 
-def validation_siamese(dataloader, model, loss_fn):
+def validation_siamese(val_data, one_shot_data, model, loss_fn):
     """
     This function is used to validate the siamese training. Like the train function, it is not called by itself, but by the fit function.
 
     Args:
-        dataloader: the validation dataloader.
+        val_data: the validation data array.
+        one_shot_data: the samples of each class for one-shot learning.
         model: the model whose training must be validated.
         loss_fn: the loss function to be used.
 
@@ -351,10 +358,7 @@ def validation_siamese(dataloader, model, loss_fn):
 
     """
     # Calculate the total number of images.
-    size = len(dataloader.dataset)
-
-    # Calculate the number of batches.
-    num_batches = len(dataloader)
+    size = len(val_data)
 
     # Put the model in evaluation mode.
     model.eval()
@@ -363,20 +367,27 @@ def validation_siamese(dataloader, model, loss_fn):
     val_loss, num_correct = 0, 0
 
     # Proceed without gradient calculation (this reduces the charge on the memory).
+    labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"]
     with torch.no_grad():
-        # Iterate over the dataloader.
-        for val_batch in dataloader:
-            anchor = val_batch[0].to(device)
-            validation = val_batch[1].to(device)
-            labels = val_batch[2].float().to(device)
-            outputs = model(anchor, validation)
+        for item in val_data:
+            image = item[0].unsqueeze(0).to(device)
+            label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
+            image_output = model(image)
+            lowest_loss = float('inf')
+            image_class = -1
+            for anchor in one_shot_data:
+                anchor_image = anchor[0].unsqueeze(0).to(device)
+                anchor_output = model(anchor_image)
+                pred_loss = loss_fn(image_output, anchor_output, torch.tensor([1.0]).to(device)).item()
+                if pred_loss < lowest_loss:
+                    lowest_loss = pred_loss
+                    image_class = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == anchor[1])
             
-            loss = loss_fn(outputs.squeeze(), labels).item()
-            val_loss += loss
-            num_correct += ((outputs.squeeze() >= SIAMESE_MODEL_HYPERPARAMETERS["ACC_THRESHOLD"]) == labels).type(torch.float).sum().item()
-
+            val_loss += lowest_loss
+            num_correct += int((image_class == label))
+            
     # Calculate the mean loss.
-    val_loss /= num_batches
+    val_loss /= size
 
     # Calculate the accuracy.
     val_accuracy = num_correct / size
@@ -392,13 +403,14 @@ def validation_siamese(dataloader, model, loss_fn):
     return val_loss, val_accuracy
 
 
-def fit_siamese(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, patience, tolerance, path_to_save):
+def fit_siamese(train_dataloader, val_data, one_shot_data, model, optimizer, loss_fn, epochs, patience, tolerance, path_to_save):
     """
     This function fits the model to the training data for a number of epochs.
 
     Args:
         train_dataloader: the training dataloader.
-        val_dataloader: the validation dataloader.
+        val_dataloader: the validation data array.
+        one_shot_data: the samples for each class to be used in one-shot learning
         model: the model to be trained.
         optimizer: the optimizer with which the weights will get adjusted.
         loss_fn: the loss function to be used.
@@ -407,10 +419,9 @@ def fit_siamese(train_dataloader, val_dataloader, model, optimizer, loss_fn, epo
         tolerance: the biggest change that doesn't count as improvement.
         path_to_save: the path to which the model's best weights are to be saved.
 
-    Returns:
+    Returns: he metrics of accuracy and loss for training and validation
 
     """
-    print('entrou')
     # Initialize a variable to watch the number of epochs without improvement for the patience limit.
     total_without_improvement = 0
 
@@ -435,7 +446,8 @@ def fit_siamese(train_dataloader, val_dataloader, model, optimizer, loss_fn, epo
         train_loss, train_acc = train_siamese(train_dataloader, model, loss_fn, optimizer)
 
         # Validate the training and get the loss and the accuracy.
-        val_loss, val_acc = validation_siamese(dataloader=val_dataloader,
+        val_loss, val_acc = validation_siamese(val_data=val_data,
+                                       one_shot_data=one_shot_data,
                                        model=model,
                                        loss_fn=loss_fn)
 
@@ -576,7 +588,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     return precision, recall, fscore
 
 
-def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
+def test_siamese(test_data, one_shot_data, loss_fn, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     
     precision_metric = Precision(task="multiclass", num_classes=len(labels_map))
     recall_metric = Recall(task="multiclass", num_classes=len(labels_map))
@@ -588,17 +600,18 @@ def test_siamese(test_data, one_shot_data, model, path_to_save_matrix_csv, path_
         for item in test_data:
             image = item[0].unsqueeze(0).to(device)
             label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
-            highest_score = float('-inf')
+            image_output = model(image)
+            lowest_loss = float('inf')
             image_class = -1
-            print(len(one_shot_data))
             for anchor in one_shot_data:
                 anchor_image = anchor[0].unsqueeze(0).to(device)
-                pred_score = model(image, anchor_image)
-                if pred_score > highest_score:
-                    highest_score = pred_score
+                anchor_output = model(anchor_image)
+                pred_loss = loss_fn(image_output, anchor_output, torch.tensor([1.0]).to(device)).item()
+                if pred_loss < lowest_loss:
+                    lowest_loss = pred_loss
                     image_class = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == anchor[1])
             
-            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {highest_score.item()}')
+            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {lowest_loss}')
             
             predictions.append(image_class)
             labels.append(label)
