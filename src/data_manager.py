@@ -288,14 +288,13 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     train_size = int((1-val_split) * len(train_paths))
     val_paths = train_paths[train_size:]
     train_paths = train_paths[:train_size]    
-    print('val_split: ', val_split,' train_path_size:',len(train_paths),'train_size: ', train_size, ' val_size: ', len(val_paths))
     all_pairs = np.array(np.meshgrid(train_paths, train_paths)).T.reshape(-1, 2)
     all_pairs = all_pairs[all_pairs[:, 0] != all_pairs[:, 1]]
     anchor_paths = all_pairs[:, 0]
     validation_paths = all_pairs[:, 1]
     train_data = SiameseDataset(anchor_paths, validation_paths)
-    one_shot_data = [[preprocess(files_in_subfolder[0]), os.path.basename(sub_folder)] for sub_folder in os.listdir(TRAIN_PATH) if os.path.isdir(os.path.join(TRAIN_PATH, sub_folder)) and (files_in_subfolder := glob.glob(os.path.join(TRAIN_PATH, sub_folder, '*.jpg')))]
     train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=10)
+    train_data = [[preprocess(file_path), os.path.basename(os.path.dirname(file_path))] for file_path in train_paths]
     val_data = [[preprocess(file_path), os.path.basename(os.path.dirname(file_path))] for file_path in val_paths]
     test_data = [[preprocess(file), os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.jpg'))]
 
@@ -308,4 +307,4 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     labels_map = DATA_HYPERPARAMETERS["CLASSES"]
     print(f"\nClasses: {labels_map}")
 
-    return train_data_loader, val_data, test_data, one_shot_data
+    return train_data_loader, train_data, val_data, test_data

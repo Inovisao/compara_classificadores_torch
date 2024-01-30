@@ -40,7 +40,7 @@ SIAMESE_DATA_HYPERPARAMETERS = {
     "TEST_DATA_DIR": TEST_DATA_DIR,
     "CLASSES": CLASSES,
     "NUM_CLASSES": NUM_CLASSES,
-    "CLASS_SAMPLE_SIZE": 100,
+    "CLASS_SAMPLE_SIZE": 10,
 }
 
 
@@ -60,6 +60,7 @@ SIAMESE_MODEL_HYPERPARAMETERS = {
     "PATIENCE": 10,
     "TOLERANCE": 0.0001,
     "USE_TRANSFER_LEARNING": False,
+    "NUM_ATTRIBUTES": 4096,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
     "MARGIN": 1,
     "THRESHOLD": 0.3,

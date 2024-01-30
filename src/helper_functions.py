@@ -285,7 +285,7 @@ def fit(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, pat
     })
 
 
-def train_siamese(dataloader, model, loss_fn, optimizer):
+def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer):
     """
     This function is used to train a siamese model. It is not called by itself, but inside the 'fit_siamese' function below.
 
@@ -298,8 +298,10 @@ def train_siamese(dataloader, model, loss_fn, optimizer):
     Returns: the training loss and the accuracy.
 
     """
+    labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"]
     # Calculate the total number of images (which will be necessary below, to calculate the accuracy).
-    size = len(dataloader.dataset)
+    size_rec = len(dataloader.dataset)
+    size_cls = len(data)
 
     # Get the number of batches.
     num_batches = len(dataloader)
@@ -308,49 +310,61 @@ def train_siamese(dataloader, model, loss_fn, optimizer):
     model.train()
 
     # Initialize the loss and the accuracy with value 0.
-    train_loss, train_accuracy = 0, 0
+    train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
 
     # Initialize the number of correct predictions as 0.
-    num_correct = 0
+    num_correct_rec, num_correct_cls = 0, 0
 
     # Iterate over the batches with a counter (enumeration).
     for batch in dataloader:
         anchor = batch[0].to(device)
         validation = batch[1].to(device)
         labels = batch[2].float().to(device)
-        anchor_output = model(anchor)
-        validation_output = model(validation)
+        rec_output, _ = model(anchor, validation)
         
-        loss = loss_fn(anchor_output, validation_output, labels)
-        train_loss += loss.item()
-        num_correct += (loss <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
+        loss_rec = loss_fn_rec(rec_output, labels)
+        train_loss_rec += loss_rec.item()
+        num_correct_rec += (loss_rec <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
     
-    loss.backward()
+    loss_rec.backward()
     optimizer.step()
     optimizer.zero_grad()
+
+    for item in data:
+        image = item[0].unsqueeze(0).to(device)
+        label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
+        _, cls_output = model(image, image)
+        loss_cls = loss_fn_cls(cls_output,label)
+        train_loss_cls += loss_cls.item()
+        num_correct_cls += (cls_output.argmax(1) == label).type(torch.float).sum().item()
+
+    loss_cls.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+
     print('Training statistics:')
-    print('Total number of images: ',size)
-    print('Total number of correct predictions: ',num_correct)
 
-    # Calculate the mean loss during training.
-    train_loss /= num_batches
-    print('Mean loss: ',train_loss)
+    print('Recognition:')
+    print('Total number of images: ',size_rec)
+    print('Total number of correct predictions: ',num_correct_rec)
+    train_accuracy_rec = num_correct_rec / size_rec
+    print('Accuracy: ',train_accuracy_rec)
+    train_loss_rec /= num_batches
+    print('Mean loss: ',train_loss_rec)
 
-    # Calculate the accuracy during training.
-    train_accuracy = num_correct / size
-    print('Accuracy: ',train_accuracy)
-
+    print('Classification:')
+    print('Total number of images: ',size_cls)
+    print('Total number of correct predictions: ',num_correct_cls)
     # Return training loss and accuracy.
-    return train_loss, train_accuracy
+    return train_loss_rec, train_loss_cls, train_accuracy_rec, train_accuracy_cls
 
 
-def validation_siamese(val_data, one_shot_data, model, loss_fn):
+def validation_siamese(val_data, model, loss_fn):
     """
     This function is used to validate the siamese training. Like the train function, it is not called by itself, but by the fit function.
 
     Args:
         val_data: the validation data array.
-        one_shot_data: the samples of each class for one-shot learning.
         model: the model whose training must be validated.
         loss_fn: the loss function to be used.
 
@@ -372,19 +386,10 @@ def validation_siamese(val_data, one_shot_data, model, loss_fn):
         for item in val_data:
             image = item[0].unsqueeze(0).to(device)
             label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
-            image_output = model(image)
-            lowest_loss = float('inf')
-            image_class = -1
-            for anchor in one_shot_data:
-                anchor_image = anchor[0].unsqueeze(0).to(device)
-                anchor_output = model(anchor_image)
-                pred_loss = loss_fn(image_output, anchor_output, torch.tensor([1.0]).to(device)).item()
-                if pred_loss < lowest_loss:
-                    lowest_loss = pred_loss
-                    image_class = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == anchor[1])
-            
-            val_loss += lowest_loss
-            num_correct += int((image_class == label))
+            _, cls_output = model(image, image)
+            loss = loss_fn(cls_output,label)
+            val_loss += loss.item()
+            num_correct += (cls_output.argmax(1) == label).type(torch.float).sum().item()
             
     # Calculate the mean loss.
     val_loss /= size
@@ -403,13 +408,14 @@ def validation_siamese(val_data, one_shot_data, model, loss_fn):
     return val_loss, val_accuracy
 
 
-def fit_siamese(train_dataloader, val_data, one_shot_data, model, optimizer, loss_fn, epochs, patience, tolerance, path_to_save):
+def fit_siamese(train_dataloader, train_data, val_data, model, optimizer, loss_fn_rec, loss_fn_cls, epochs, patience, tolerance, path_to_save):
     """
     This function fits the model to the training data for a number of epochs.
 
     Args:
-        train_dataloader: the training dataloader.
-        val_dataloader: the validation data array.
+        train_dataloader: the training dataloader for recognition.
+        train_data: the training data array for classification.
+        val_data: the validation data array.
         one_shot_data: the samples for each class to be used in one-shot learning
         model: the model to be trained.
         optimizer: the optimizer with which the weights will get adjusted.
@@ -426,8 +432,10 @@ def fit_siamese(train_dataloader, val_data, one_shot_data, model, optimizer, los
     total_without_improvement = 0
 
     # Initialize an empty list to hold the training and validation values during training.
-    loss_history = []
-    acc_history = []
+    loss_history_rec = []
+    acc_history_rec = []
+    loss_history_cls = []
+    acc_history_cls = []
     val_loss_history = []
     val_acc_history = []
 
@@ -443,17 +451,23 @@ def fit_siamese(train_dataloader, val_data, one_shot_data, model, optimizer, los
         print(f"\nExecuting epoch number: {epoch + 1}")
 
         # Train the model and get the loss and the accuracy.
-        train_loss, train_acc = train_siamese(train_dataloader, model, loss_fn, optimizer)
+        train_loss_rec, train_loss_cls, train_acc_rec, train_acc_cls = train_siamese(dataloader=train_dataloader, 
+                                                                                     data=train_data, 
+                                                                                     model=model, 
+                                                                                     loss_fn_rec=loss_fn_rec, 
+                                                                                     loss_fn_cls=loss_fn_cls, 
+                                                                                     optimizer=optimizer)
 
         # Validate the training and get the loss and the accuracy.
         val_loss, val_acc = validation_siamese(val_data=val_data,
-                                       one_shot_data=one_shot_data,
-                                       model=model,
-                                       loss_fn=loss_fn)
+                                               model=model,
+                                               loss_fn=loss_fn_cls)
 
         # Append the losses and the accuracies to the lists initilized above.
-        loss_history.append(train_loss)
-        acc_history.append(train_acc)
+        loss_history_rec.append(train_loss_rec)
+        acc_history_rec.append(train_acc_rec)
+        loss_history_cls.append(train_loss_cls)
+        acc_history_cls.append(train_acc_cls)
         val_loss_history.append(val_loss)
         val_acc_history.append(val_acc)
 
@@ -490,8 +504,10 @@ def fit_siamese(train_dataloader, val_data, one_shot_data, model, optimizer, los
 
     # Return a pandas dataframe with training and validation accuracies and losses.
     return pd.DataFrame(data={
-        "loss": loss_history,
-        "acc": acc_history,
+        "train_loss_rec": loss_history_rec,
+        "train_acc_rec": acc_history_rec,
+        "train_loss_cls": loss_history_cls,
+        "train_acc_cls": acc_history_cls,
         "val_loss": val_loss_history,
         "val_acc": val_acc_history
     })
@@ -588,7 +604,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     return precision, recall, fscore
 
 
-def test_siamese(test_data, one_shot_data, loss_fn, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
+def test_siamese(test_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     
     precision_metric = Precision(task="multiclass", num_classes=len(labels_map))
     recall_metric = Recall(task="multiclass", num_classes=len(labels_map))
@@ -600,22 +616,14 @@ def test_siamese(test_data, one_shot_data, loss_fn, model, path_to_save_matrix_c
         for item in test_data:
             image = item[0].unsqueeze(0).to(device)
             label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
-            image_output = model(image)
-            lowest_loss = float('inf')
-            image_class = -1
-            for anchor in one_shot_data:
-                anchor_image = anchor[0].unsqueeze(0).to(device)
-                anchor_output = model(anchor_image)
-                pred_loss = loss_fn(image_output, anchor_output, torch.tensor([1.0]).to(device)).item()
-                if pred_loss < lowest_loss:
-                    lowest_loss = pred_loss
-                    image_class = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == anchor[1])
-            
-            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class >= 0 else "No Class Identified"} Score: {lowest_loss}')
-            
+            _, cls_output = model(image, image)
+            image_class = cls_output.argmax(1)
+            score = cls_output.argmax().item()
+
+            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class in enumerate(labels_map) else "No Class Identified"} Score: {score}')
             predictions.append(image_class)
             labels.append(label)
-
+            
             precision_metric.update(torch.tensor([image_class]), torch.tensor([label]))
             recall_metric.update(torch.tensor([image_class]), torch.tensor([label]))
             fscore_metric.update(torch.tensor([image_class]), torch.tensor([label]))
@@ -708,3 +716,65 @@ def plot_history(history, path_to_save):
     plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
 
 
+
+def plot_history_siamese(history, path_to_save):
+    """
+    This function plots the history. It creates two subplots, one for the training and validation losses and another
+    one for the training and validation accuracies.
+
+    Args:
+        history: a pandas dataframe containing the history in four columns: loss, val_loss, acc, and val_acc.
+        path_to_save: the path to save the history plot.
+
+    Returns: nothing, but it saves the plot as an image file whose format must be defined through the name given
+    with the path to save it.
+
+    """
+    # Get the number of epochs.
+    epochs = list(range(len(history["val_loss"])))
+
+    # First subplot, with losses.
+    fig, ax = plt.subplots(1, 3)
+    # Plot the training loss.
+    
+    # Get scale-appropriate ylim
+    all_losses = list(history["train_loss_rec"]) + list(history["train_loss_cls"]) + list(history["val_loss"])
+    quantiles = np.quantile(all_losses, [0.25, 0.75])
+    iqr = (quantiles[1] - quantiles[0])
+    norm_sup = quantiles[1] + (1.5 * iqr)
+    norm_inf = quantiles[0] - (1.5 * iqr)
+    ax[0].set_ylim(norm_inf, norm_sup)
+    
+    # Plot
+    ax[0].plot(epochs, history["loss"], label="Training loss")
+    ax[0].plot(epochs, history["val_loss"], label="Validation loss")
+    # Give the subplot a title.
+    ax[0].set_title("Losses", fontsize=12)
+    # Specify axes' names.
+    ax[0].set_xlabel("Epochs")
+    ax[0].set_ylabel("Loss")
+    
+    # Put a legend into the subplot.
+    ax[0].legend()
+
+    # Plot training accuracy.
+    # Give the subplot a title.
+    ax[1].set_title("Accuracies", fontsize=12)
+    # Specify axes' names.
+    ax[1].set_xlabel("Epochs")
+    ax[1].set_ylabel("Accuracy")
+    
+    # Plot
+    ax[1].plot(epochs, history["acc"], label="Training accuracy")
+    ax[1].plot(epochs, history["val_acc"], label="Validation accuracy")
+    
+    # Put a legend into the subplot.
+    ax[1].legend()
+
+    # Set the big title
+    suptitle = plt.suptitle("Training vs. Validation", fontsize=14)
+    
+    # Adjust the layout
+    fig.tight_layout()
+    # Save the plot.
+    plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
