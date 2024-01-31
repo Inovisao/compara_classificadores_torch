@@ -103,12 +103,17 @@ def main():
     print("===================================")
 
     # Get the optimizer.
-    optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args["learning_rate"])
+    optimizer_rec = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=(args["learning_rate"]/SIAMESE_MODEL_HYPERPARAMETERS["LR_SCALE_FACTOR"]))
+    optimizer_cls = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args["learning_rate"])
     
     try:
-        assert optimizer.__name__
+        assert optimizer_rec.__name__
     except AttributeError as _:
-        optimizer.__name__ = args["optimizer"]
+        optimizer_rec.__name__ = args["optimizer"]
+    try:
+        assert optimizer_cls.__name__
+    except AttributeError as _:
+        optimizer_cls.__name__ = args["optimizer"]
         
     # Get the loss function.
     loss_function_recognition = ContrastiveLoss(margin=SIAMESE_MODEL_HYPERPARAMETERS["MARGIN"],device=SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"])
@@ -128,7 +133,8 @@ def main():
                                    train_data=train_data,
                                    val_data=val_data,
                                    model=model,
-                                   optimizer=optimizer,
+                                   optimizer_rec=optimizer_rec,
+                                   optimizer_cls=optimizer_cls,
                                    loss_fn_rec=loss_function_recognition,
                                    loss_fn_cls=loss_function_classification,
                                    epochs=SIAMESE_MODEL_HYPERPARAMETERS["NUM_EPOCHS"],

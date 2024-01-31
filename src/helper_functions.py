@@ -285,79 +285,64 @@ def fit(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, pat
     })
 
 
-def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer):
-    """
-    This function is used to train a siamese model. It is not called by itself, but inside the 'fit_siamese' function below.
-
-    Args:
-        dataloader: the training dataloader.
-        model: the model to be trained.
-        loss_fn: the loss function to be used.
-        optimizer: the optimizer to be used.
-
-    Returns: the training loss and the accuracy.
-
-    """
-    labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"]
-    # Calculate the total number of images (which will be necessary below, to calculate the accuracy).
+def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer_rec, optimizer_cls):
+    labels_map = SIAMESE_DATA_HYPERPARAMETERS["CLASSES"]
     size_rec = len(dataloader.dataset)
     size_cls = len(data)
-
-    # Get the number of batches.
     num_batches = len(dataloader)
 
-    # Puts the model in training mode.
     model.train()
-
-    # Initialize the loss and the accuracy with value 0.
     train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
-
-    # Initialize the number of correct predictions as 0.
     num_correct_rec, num_correct_cls = 0, 0
 
-    # Iterate over the batches with a counter (enumeration).
     for batch in dataloader:
         anchor = batch[0].to(device)
         validation = batch[1].to(device)
         labels = batch[2].float().to(device)
+
         rec_output, _ = model(anchor, validation)
-        
         loss_rec = loss_fn_rec(rec_output, labels)
+
+        optimizer_rec.zero_grad()
+        loss_rec.backward()
+        optimizer_rec.step()
+
         train_loss_rec += loss_rec.item()
-        num_correct_rec += (loss_rec <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
-    
-    loss_rec.backward()
-    optimizer.step()
-    optimizer.zero_grad()
+        num_correct_rec += (rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
 
     for item in data:
         image = item[0].unsqueeze(0).to(device)
         label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
+
         _, cls_output = model(image, image)
-        loss_cls = loss_fn_cls(cls_output,label)
+        loss_cls = loss_fn_cls(cls_output, torch.tensor([label]).to(device))
+
+        optimizer_cls.zero_grad()
+        loss_cls.backward()
+        optimizer_cls.step()
+
         train_loss_cls += loss_cls.item()
         num_correct_cls += (cls_output.argmax(1) == label).type(torch.float).sum().item()
-
-    loss_cls.backward()
-    optimizer.step()
-    optimizer.zero_grad()
 
     print('Training statistics:')
 
     print('Recognition:')
-    print('Total number of images: ',size_rec)
-    print('Total number of correct predictions: ',num_correct_rec)
+    print('Total number of images: ', size_rec)
+    print('Total number of correct predictions: ', num_correct_rec)
     train_accuracy_rec = num_correct_rec / size_rec
-    print('Accuracy: ',train_accuracy_rec)
+    print('Accuracy: ', train_accuracy_rec)
     train_loss_rec /= num_batches
-    print('Mean loss: ',train_loss_rec)
+    print('Mean loss: ', train_loss_rec)
 
     print('Classification:')
-    print('Total number of images: ',size_cls)
-    print('Total number of correct predictions: ',num_correct_cls)
-    # Return training loss and accuracy.
-    return train_loss_rec, train_loss_cls, train_accuracy_rec, train_accuracy_cls
+    print('Total number of images: ', size_cls)
+    print('Total number of correct predictions: ', num_correct_cls)
+    train_accuracy_cls = num_correct_cls / size_cls
+    print('Accuracy: ', train_accuracy_cls)
+    train_loss_cls /= size_cls
+    print('Mean loss: ', train_loss_cls)
 
+    return train_loss_rec, train_loss_cls, train_accuracy_rec, train_accuracy_cls
 
 def validation_siamese(val_data, model, loss_fn):
     """
@@ -387,7 +372,7 @@ def validation_siamese(val_data, model, loss_fn):
             image = item[0].unsqueeze(0).to(device)
             label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
             _, cls_output = model(image, image)
-            loss = loss_fn(cls_output,label)
+            loss = loss_fn(cls_output,torch.tensor([label]).to(device))
             val_loss += loss.item()
             num_correct += (cls_output.argmax(1) == label).type(torch.float).sum().item()
             
@@ -408,7 +393,7 @@ def validation_siamese(val_data, model, loss_fn):
     return val_loss, val_accuracy
 
 
-def fit_siamese(train_dataloader, train_data, val_data, model, optimizer, loss_fn_rec, loss_fn_cls, epochs, patience, tolerance, path_to_save):
+def fit_siamese(train_dataloader, train_data, val_data, model, optimizer_rec, optimizer_cls, loss_fn_rec, loss_fn_cls, epochs, patience, tolerance, path_to_save):
     """
     This function fits the model to the training data for a number of epochs.
 
@@ -418,7 +403,8 @@ def fit_siamese(train_dataloader, train_data, val_data, model, optimizer, loss_f
         val_data: the validation data array.
         one_shot_data: the samples for each class to be used in one-shot learning
         model: the model to be trained.
-        optimizer: the optimizer with which the weights will get adjusted.
+        optimizer_rec: the optimizer with which the weights will get adjusted for recognition.
+        optimizer_cls: the optimizer withe which the weights will get ajusted for classification.
         loss_fn: the loss function to be used.
         epochs: the number of epochs.
         patience: the maximum number of epochs without improvement accepted. Training will stop when this number is exceeded.
@@ -442,7 +428,8 @@ def fit_siamese(train_dataloader, train_data, val_data, model, optimizer, loss_f
     # Show the path to the saved model.
     print(f"The best weights will be saved in: {path_to_save}.")
 
-    optimizer.zero_grad()
+    optimizer_rec.zero_grad()
+    optimizer_cls.zero_grad()
 
     # Run the training program for the specified number of epochs.
     for epoch in range(epochs):
@@ -456,7 +443,8 @@ def fit_siamese(train_dataloader, train_data, val_data, model, optimizer, loss_f
                                                                                      model=model, 
                                                                                      loss_fn_rec=loss_fn_rec, 
                                                                                      loss_fn_cls=loss_fn_cls, 
-                                                                                     optimizer=optimizer)
+                                                                                     optimizer_rec=optimizer_rec,
+                                                                                     optimizer_cls=optimizer_cls)
 
         # Validate the training and get the loss and the accuracy.
         val_loss, val_acc = validation_siamese(val_data=val_data,
@@ -621,7 +609,7 @@ def test_siamese(test_data, model, path_to_save_matrix_csv, path_to_save_matrix_
             score = cls_output.argmax().item()
 
             print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class in enumerate(labels_map) else "No Class Identified"} Score: {score}')
-            predictions.append(image_class)
+            predictions.append(image_class.item())
             labels.append(label)
             
             precision_metric.update(torch.tensor([image_class]), torch.tensor([label]))
@@ -636,6 +624,7 @@ def test_siamese(test_data, model, path_to_save_matrix_csv, path_to_save_matrix_
         avg_fscore = avg_fscore.item()
 
         matrix = metrics.confusion_matrix(labels, predictions)
+
         df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
         df_matrix.to_csv(path_to_save_matrix_csv)
         plt.figure()
@@ -733,10 +722,10 @@ def plot_history_siamese(history, path_to_save):
     # Get the number of epochs.
     epochs = list(range(len(history["val_loss"])))
 
+    # Create subplots with two columns.
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+
     # First subplot, with losses.
-    fig, ax = plt.subplots(1, 3)
-    # Plot the training loss.
-    
     # Get scale-appropriate ylim
     all_losses = list(history["train_loss_rec"]) + list(history["train_loss_cls"]) + list(history["val_loss"])
     quantiles = np.quantile(all_losses, [0.25, 0.75])
@@ -746,35 +735,34 @@ def plot_history_siamese(history, path_to_save):
     ax[0].set_ylim(norm_inf, norm_sup)
     
     # Plot
-    ax[0].plot(epochs, history["loss"], label="Training loss")
+    ax[0].plot(epochs, history["train_loss_rec"], label="Training Recognition loss")
+    ax[0].plot(epochs, history["train_loss_cls"], label="Training Classification loss")
     ax[0].plot(epochs, history["val_loss"], label="Validation loss")
     # Give the subplot a title.
     ax[0].set_title("Losses", fontsize=12)
     # Specify axes' names.
     ax[0].set_xlabel("Epochs")
     ax[0].set_ylabel("Loss")
-    
     # Put a legend into the subplot.
     ax[0].legend()
 
-    # Plot training accuracy.
+    # Second subplot, with accuracies.
+    # Plot
+    ax[1].plot(epochs, history["train_acc_rec"], label="Training Recognition accuracy")
+    ax[1].plot(epochs, history["train_acc_cls"], label="Training Classification accuracy")
+    ax[1].plot(epochs, history["val_acc"], label="Validation accuracy")
     # Give the subplot a title.
     ax[1].set_title("Accuracies", fontsize=12)
     # Specify axes' names.
     ax[1].set_xlabel("Epochs")
     ax[1].set_ylabel("Accuracy")
-    
-    # Plot
-    ax[1].plot(epochs, history["acc"], label="Training accuracy")
-    ax[1].plot(epochs, history["val_acc"], label="Validation accuracy")
-    
     # Put a legend into the subplot.
     ax[1].legend()
 
     # Set the big title
     suptitle = plt.suptitle("Training vs. Validation", fontsize=14)
-    
+
     # Adjust the layout
     fig.tight_layout()
     # Save the plot.
-    plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
+    plt.savefig(path_to_save, bbox_extra_artists=(suptitle,), bbox_inches="tight", dpi=300)
