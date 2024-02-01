@@ -43,7 +43,7 @@ class SiameseNetwork(nn.Module):
         self.recognition_head = nn.Sequential( 
                                     nn.Linear(num_attributes, num_attributes),
                                     nn.ReLU(),
-                                    nn.Linear(num_attributes, num_attributes))
+                                    nn.Linear(num_attributes, num_attributes/2))
         self.classification_head = nn.Sequential( 
                                     nn.Linear(num_attributes, num_attributes),
                                     nn.ReLU(),
