@@ -2,6 +2,9 @@
 # Config: Dell Precision 3660, Nvidia RTX A4000, Ubuntu 22.04.3
 # Pistori
 
+# ACABEI DE VER QUE A INSTALAÇÃO NÃO FUNCIONOU DIREITO POIS
+# O PYTORCH ESTÁ USANDO A CPU (NÃO ESTÁ PEGANDO A GPU)
+
 conda create --yes -c pytorch -c conda-forge --name cla_torch pytorch torchvision cudatoolkit scikit-learn pandas matplotlib numpy seaborn  
 
 conda activate cla_torch
