@@ -9,6 +9,6 @@ install.packages("ExpDes")
 install.packages("dplyr")
 install.packages("ExpDes.pt")
 install.packages("reshape")
+install.packages("data.table")
 install.packages("kableExtra")
-install.packages(data.table)
 

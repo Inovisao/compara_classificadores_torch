@@ -12,7 +12,7 @@
 - Rode o script rodaCruzada.sh, passando o número de dobras como argumento -k (ex.: ./rodaCruzada.sh -k 10).
 
 ## Instalação.
-- Instale as seguintes dependências: PyTorch (Torchvision, etc.), OmniXAI (para a GradCAM), timm (i.e., PyTorch Image Models, para os modelos adicionais).
+- Leia o arquivo install.txt
 
 ## Adicionando mais arquiteturas.
 
