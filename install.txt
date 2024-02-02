@@ -1,3 +1,28 @@
+# Testado em Fev/2024
+# Config: Dell Precision 3660, Nvidia RTX A4000, Ubuntu 22.04.3
+# Pistori
+
+conda create --yes -c pytorch -c conda-forge --name cla_torch pytorch torchvision cudatoolkit scikit-learn pandas matplotlib numpy seaborn  
+
+conda activate cla_torch
+
+pip install --no-input ml_collections timm tifffile omnixai opencv-python-headless wget torchmetrics
+
+# Para instalar as dependência dos códigos em R
+# use o comando abaixo (não inclui instalação do próprio R)
+
+sudo apt-get install libfontconfig1-dev
+Rscript install_R_packages.R 
+
+
+
+
+
+
+# DAQUI PARA BAIXO ESTÁ DESATUALIZADO ... TALVEZ SEJA MELHOR APAGAR
+# DEPOIS QUE CONFERIR SE NÃO TEM NADA ÚTIL
+
+
 O próximo que for instalar, antes de rodar o que tem aqui, tente usar o seguinte comando:
 
 conda env create -f environment.yml
