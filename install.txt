@@ -5,11 +5,12 @@
 # ACABEI DE VER QUE A INSTALAÇÃO NÃO FUNCIONOU DIREITO POIS
 # O PYTORCH ESTÁ USANDO A CPU (NÃO ESTÁ PEGANDO A GPU)
 
-conda create --yes -c pytorch -c conda-forge --name cla_torch pytorch torchvision cudatoolkit scikit-learn pandas matplotlib numpy seaborn  
-
+conda create --yes --name cla_torch
 conda activate cla_torch
-
-pip install --no-input ml_collections timm tifffile omnixai opencv-python-headless wget torchmetrics
+conda install --yes pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+conda install --yes scikit-learn pandas matplotlib numpy seaborn  
+# conda install --yes omnixai # DEU PAU COM PIP TAMBÉM
+pip install --no-input ml_collections timm tifffile opencv-python-headless wget torchmetrics
 
 # Para instalar as dependência dos códigos em R
 # use o comando abaixo (não inclui instalação do próprio R)
