@@ -285,17 +285,17 @@ def fit(train_dataloader, val_dataloader, model, optimizer, loss_fn, epochs, pat
     })
 
 
-def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer_rec, optimizer_cls):
-    labels_map = SIAMESE_DATA_HYPERPARAMETERS["CLASSES"]
-    size_rec = len(dataloader.dataset)
-    size_cls = len(data)
-    num_batches = len(dataloader)
+def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cls, optimizer_rec, optimizer_cls):
+    size_rec = len(dataloader_rec.dataset)
+    size_cls = len(dataloader_cls.dataset)
+    num_batches_rec = len(dataloader_rec)
+    num_batches_cls = len(dataloader_cls)
 
     model.train()
     train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
     num_correct_rec, num_correct_cls = 0, 0
 
-    for batch in dataloader:
+    for batch in dataloader_rec:
         anchor = batch[0].to(device)
         validation = batch[1].to(device)
         labels = batch[2].float().to(device)
@@ -310,19 +310,20 @@ def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer_r
         train_loss_rec += loss_rec.item()
         num_correct_rec += (rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
 
-    for item in data:
-        image = item[0].unsqueeze(0).to(device)
-        label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
+    for batch in dataloader_cls:
+        images = batch[0].to(device)
+        labels = batch[1].to(device)
 
-        _, cls_output = model(image, image)
-        loss_cls = loss_fn_cls(cls_output, torch.tensor([label]).to(device))
+        _, cls_output = model(images, images)
+        loss_cls = loss_fn_cls(cls_output, labels)
 
         optimizer_cls.zero_grad()
         loss_cls.backward()
         optimizer_cls.step()
 
         train_loss_cls += loss_cls.item()
-        num_correct_cls += (cls_output.argmax(1) == label).type(torch.float).sum().item()
+        num_correct_cls += (cls_output.argmax(1) == labels).type(torch.float).sum().item()
+
 
     print('Training statistics:')
 
@@ -331,7 +332,7 @@ def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer_r
     print('Total number of correct predictions: ', num_correct_rec)
     train_accuracy_rec = num_correct_rec / size_rec
     print('Accuracy: ', train_accuracy_rec)
-    train_loss_rec /= num_batches
+    train_loss_rec /= num_batches_rec
     print('Mean loss: ', train_loss_rec)
 
     print('Classification:')
@@ -339,17 +340,17 @@ def train_siamese(dataloader, data, model, loss_fn_rec, loss_fn_cls, optimizer_r
     print('Total number of correct predictions: ', num_correct_cls)
     train_accuracy_cls = num_correct_cls / size_cls
     print('Accuracy: ', train_accuracy_cls)
-    train_loss_cls /= size_cls
+    train_loss_cls /= num_batches_cls
     print('Mean loss: ', train_loss_cls)
 
     return train_loss_rec, train_loss_cls, train_accuracy_rec, train_accuracy_cls
 
-def validation_siamese(val_data, model, loss_fn):
+def validation_siamese(val_dataloader, model, loss_fn):
     """
     This function is used to validate the siamese training. Like the train function, it is not called by itself, but by the fit function.
 
     Args:
-        val_data: the validation data array.
+        val_dataloader: the validation dataloader.
         model: the model whose training must be validated.
         loss_fn: the loss function to be used.
 
@@ -357,7 +358,8 @@ def validation_siamese(val_data, model, loss_fn):
 
     """
     # Calculate the total number of images.
-    size = len(val_data)
+    size = len(val_dataloader.dataset)
+    num_batches = len(val_dataloader)
 
     # Put the model in evaluation mode.
     model.eval()
@@ -366,18 +368,19 @@ def validation_siamese(val_data, model, loss_fn):
     val_loss, num_correct = 0, 0
 
     # Proceed without gradient calculation (this reduces the charge on the memory).
-    labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"]
     with torch.no_grad():
-        for item in val_data:
-            image = item[0].unsqueeze(0).to(device)
-            label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
-            _, cls_output = model(image, image)
-            loss = loss_fn(cls_output,torch.tensor([label]).to(device))
+        for batch in val_dataloader:
+            images = batch[0].to(device)
+            labels = batch[1].to(device)
+
+            _, cls_output = model(images, images)
+            loss = loss_fn(cls_output, labels)
+
             val_loss += loss.item()
-            num_correct += (cls_output.argmax(1) == label).type(torch.float).sum().item()
+            num_correct += (cls_output.argmax(1) == labels).type(torch.float).sum().item()
             
     # Calculate the mean loss.
-    val_loss /= size
+    val_loss /= num_batches
 
     # Calculate the accuracy.
     val_accuracy = num_correct / size
@@ -393,14 +396,14 @@ def validation_siamese(val_data, model, loss_fn):
     return val_loss, val_accuracy
 
 
-def fit_siamese(train_dataloader, train_data, val_data, model, optimizer_rec, optimizer_cls, loss_fn_rec, loss_fn_cls, epochs, patience, tolerance, path_to_save):
+def fit_siamese(train_dataloader_rec, train_dataloader_cls, val_dataloader, model, optimizer_rec, optimizer_cls, loss_fn_rec, loss_fn_cls, epochs, patience, tolerance, path_to_save):
     """
     This function fits the model to the training data for a number of epochs.
 
     Args:
-        train_dataloader: the training dataloader for recognition.
-        train_data: the training data array for classification.
-        val_data: the validation data array.
+        train_dataloader_rec: the training dataloader for recognition.
+        train_dataloader_cls: the training dataloader for classification.
+        val_dataloader: the validation dataloader.
         one_shot_data: the samples for each class to be used in one-shot learning
         model: the model to be trained.
         optimizer_rec: the optimizer with which the weights will get adjusted for recognition.
@@ -438,8 +441,8 @@ def fit_siamese(train_dataloader, train_data, val_data, model, optimizer_rec, op
         print(f"\nExecuting epoch number: {epoch + 1}")
 
         # Train the model and get the loss and the accuracy.
-        train_loss_rec, train_loss_cls, train_acc_rec, train_acc_cls = train_siamese(dataloader=train_dataloader, 
-                                                                                     data=train_data, 
+        train_loss_rec, train_loss_cls, train_acc_rec, train_acc_cls = train_siamese(dataloader_rec=train_dataloader_rec, 
+                                                                                     dataloader_cls=train_dataloader_cls, 
                                                                                      model=model, 
                                                                                      loss_fn_rec=loss_fn_rec, 
                                                                                      loss_fn_cls=loss_fn_cls, 
@@ -447,7 +450,7 @@ def fit_siamese(train_dataloader, train_data, val_data, model, optimizer_rec, op
                                                                                      optimizer_cls=optimizer_cls)
 
         # Validate the training and get the loss and the accuracy.
-        val_loss, val_acc = validation_siamese(val_data=val_data,
+        val_loss, val_acc = validation_siamese(val_dataloader=val_dataloader,
                                                model=model,
                                                loss_fn=loss_fn_cls)
 
@@ -592,55 +595,74 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     return precision, recall, fscore
 
 
-def test_siamese(test_data, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
-    
-    precision_metric = Precision(task="multiclass", num_classes=len(labels_map))
-    recall_metric = Recall(task="multiclass", num_classes=len(labels_map))
-    fscore_metric = F1Score(task="multiclass", num_classes=len(labels_map))
+def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
+    """
+    This function tests a siamese model.
+    Args:
+        test_dataloader: the test dataloader.
+        model: the model to be tested.
+        path_to_save_matrix_csv: the path to save the confusion matrix as a .csv file.
+        path_to_save_matrix_png: the path to save the confusion matrix as a .png image.
+        labels_map: a list with the labels. It will be used to create a list with the wrong classification.
 
-    predictions, labels = [], []
+    Returns: precision, recall and fscore calculated for the model in regard to the predictions on the test dataset.
 
+    """
+    print("Starting test process")
+    # Initialize metrics
+    precision_metric = Precision(task="multiclass", num_classes=len(labels_map)).to(device)
+    recall_metric = Recall(task="multiclass", num_classes=len(labels_map)).to(device)
+    fscore_metric = F1Score(task="multiclass", num_classes=len(labels_map)).to(device)
+
+    predictions = []
+    true_labels = []
+
+    # Put the model in evaluation mode.
+    model.eval()
+
+    # Proceed without gradient calculation (this reduces the charge on the memory).
     with torch.no_grad():
-        for item in test_data:
-            image = item[0].unsqueeze(0).to(device)
-            label = next(class_id for class_id, class_name in enumerate(labels_map) if class_name == item[1])
-            _, cls_output = model(image, image)
-            image_class = cls_output.argmax(1)
-            score = cls_output.argmax().item()
+        for batch in test_dataloader:
+            images = batch[0].to(device)
+            labels = batch[1].to(device)
 
-            print(f'Expected class: {labels_map[label]} Predicted class: {labels_map[image_class] if image_class in enumerate(labels_map) else "No Class Identified"} Score: {score}')
-            predictions.append(image_class.item())
-            labels.append(label)
-            
-            precision_metric.update(torch.tensor([image_class]), torch.tensor([label]))
-            recall_metric.update(torch.tensor([image_class]), torch.tensor([label]))
-            fscore_metric.update(torch.tensor([image_class]), torch.tensor([label]))
+            # Forward pass
+            _, cls_output = model(images, images)
 
-        avg_precision = precision_metric.compute()
-        avg_precision = avg_precision.item()
-        avg_recall = recall_metric.compute()
-        avg_recall = avg_recall.item()
-        avg_fscore = fscore_metric.compute()
-        avg_fscore = avg_fscore.item()
+            # Update metrics
+            precision_metric.update(cls_output, labels)
+            recall_metric.update(cls_output, labels)
+            fscore_metric.update(cls_output, labels)
 
-        matrix = metrics.confusion_matrix(labels, predictions)
+            # Store predictions and true labels
+            predictions.extend(cls_output.argmax(dim=1).cpu().numpy())
+            true_labels.extend(labels.cpu().numpy())
 
-        df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
-        df_matrix.to_csv(path_to_save_matrix_csv)
-        plt.figure()
-        sn.heatmap(df_matrix, annot=True, yticklabels=True, xticklabels=True)
-        plt.title("Confusion matrix", fontsize=14)
-        plt.xlabel("Predicted", fontsize=12)
-        plt.ylabel("True", fontsize=12)
-        plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
+    # Compute average metrics
+    avg_precision = precision_metric.compute().item()
+    avg_recall = recall_metric.compute().item()
+    avg_fscore = fscore_metric.compute().item()
 
+    # Compute confusion matrix
+    matrix = metrics.confusion_matrix(true_labels, predictions)
+    df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
+    df_matrix.to_csv(path_to_save_matrix_csv)
+
+    # Plot confusion matrix
+    plt.figure()
+    sn.heatmap(df_matrix, annot=True, yticklabels=True, xticklabels=True)
+    plt.title("Confusion matrix", fontsize=14)
+    plt.xlabel("Predicted", fontsize=12)
+    plt.ylabel("True", fontsize=12)
+    plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
+
+    # Print final results
     print("Final results:")
     print("Precision:", avg_precision)
     print("Recall:", avg_recall)
     print("F1 Score:", avg_fscore)
 
     return avg_precision, avg_recall, avg_fscore
-
 
 def plot_history(history, path_to_save):
     """

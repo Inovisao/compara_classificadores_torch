@@ -43,7 +43,7 @@ class SiameseNetwork(nn.Module):
         self.recognition_head = nn.Sequential( 
                                     nn.Linear(num_attributes, num_attributes),
                                     nn.ReLU(),
-                                    nn.Linear(num_attributes, num_attributes/2))
+                                    nn.Linear(num_attributes, int(num_attributes/2)))
         self.classification_head = nn.Sequential( 
                                     nn.Linear(num_attributes, num_attributes),
                                     nn.ReLU(),
@@ -127,7 +127,7 @@ def main():
     loss_function_classification = nn.CrossEntropyLoss()
 
     # Get the dataloaders.
-    train_dataloader, train_data, val_data, test_data = data_manager.get_siamese_data()
+    train_dataloader_rec, train_dataloader_cls, val_dataloader, test_dataloader = data_manager.get_siamese_data()
 
     # Give the model a name.
     model_name = "siamese_" + str(args["run"]) + "_" + str(args["architecture"]) + \
@@ -136,9 +136,9 @@ def main():
     # Create a path to save the model.
     path_to_save = "../model_checkpoints/" + model_name + ".pth"
 
-    history = helper_functions.fit_siamese(train_dataloader=train_dataloader,
-                                   train_data=train_data,
-                                   val_data=val_data,
+    history = helper_functions.fit_siamese(train_dataloader_rec=train_dataloader_rec,
+                                   train_dataloader_cls=train_dataloader_cls,
+                                   val_dataloader=val_dataloader,
                                    model=model,
                                    optimizer_rec=optimizer_rec,
                                    optimizer_cls=optimizer_cls,
@@ -162,7 +162,7 @@ def main():
     path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
 
     # Test, save the results and get precision, recall and fscore.
-    precision, recall, fscore = helper_functions.test_siamese(test_data=test_data,
+    precision, recall, fscore = helper_functions.test_siamese(test_dataloader=test_dataloader,
                                                       model=model,
                                                       path_to_save_matrix_csv=path_to_matrix_csv,
                                                       path_to_save_matrix_png=path_to_matrix_png,

@@ -74,7 +74,25 @@ def preprocess(file_path):
     return transformed_img
 
 
-class SiameseDataset(Dataset):
+class SiameseDatasetCls(Dataset):
+    def __init__(self, data):
+        self.data = data
+        self.labels_map = DATA_HYPERPARAMETERS["CLASSES"]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        file_path, target_label = self.data[idx]
+        input_data = preprocess(file_path)
+        
+        target_idx = self.labels_map.index(target_label)
+        
+        return input_data, target_idx
+
+
+
+class SiameseDatasetRec(Dataset):
     def __init__(self, anchor_paths, validation_paths):
         self.anchor_paths, self.validation_paths, self.labels = self.generate_balanced_pairs(anchor_paths, validation_paths)
 
@@ -265,7 +283,8 @@ def get_data(data_dir=DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
 
 def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"], 
                      val_split=SIAMESE_DATA_HYPERPARAMETERS["VAL_SPLIT"], 
-                     batch_size=SIAMESE_DATA_HYPERPARAMETERS["BATCH_SIZE"]):
+                     batch_size_rec=SIAMESE_DATA_HYPERPARAMETERS["BATCH_SIZE_REC"],
+                     batch_size_cls=SIAMESE_DATA_HYPERPARAMETERS["BATCH_SIZE_CLS"]):
 
     TRAIN_PATH = os.path.join(data_dir,'train')
     TEST_PATH = os.path.join(data_dir,'test')
@@ -292,11 +311,17 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     all_pairs = all_pairs[all_pairs[:, 0] != all_pairs[:, 1]]
     anchor_paths = all_pairs[:, 0]
     validation_paths = all_pairs[:, 1]
-    train_data = SiameseDataset(anchor_paths, validation_paths)
-    train_data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=10)
-    train_data = [[preprocess(file_path), os.path.basename(os.path.dirname(file_path))] for file_path in train_paths]
-    val_data = [[preprocess(file_path), os.path.basename(os.path.dirname(file_path))] for file_path in val_paths]
-    test_data = [[preprocess(file), os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.jpg'))]
+    train_data = SiameseDatasetRec(anchor_paths, validation_paths)
+    train_data_loader_rec = DataLoader(train_data, batch_size=batch_size_rec, shuffle=True, num_workers=10)
+    train_data = [[file_path, os.path.basename(os.path.dirname(file_path))] for file_path in train_paths]
+    val_data = [[file_path, os.path.basename(os.path.dirname(file_path))] for file_path in val_paths]
+    test_data = [[file_path, os.path.basename(sub_folder)] for sub_folder in os.listdir(TEST_PATH) if os.path.isdir(os.path.join(TEST_PATH, sub_folder)) for file_path in glob.glob(os.path.join(TEST_PATH, sub_folder, '*.jpg'))]
+    train_data = SiameseDatasetCls(train_data)
+    val_data = SiameseDatasetCls(val_data)
+    test_data = SiameseDatasetCls(test_data)
+    train_dataloader_cls = DataLoader(train_data, batch_size=batch_size_cls, shuffle=True, num_workers=3)
+    val_dataloader = DataLoader(val_data, batch_size=batch_size_cls, shuffle=False, num_workers=3)
+    test_dataloader = DataLoader(test_data, batch_size=batch_size_cls, shuffle=False, num_workers=3)
 
     total_images = train_size + len(val_data) + len(test_data)
     print(f"Total number of images: {total_images}")
@@ -307,4 +332,4 @@ def get_siamese_data(data_dir=SIAMESE_DATA_HYPERPARAMETERS["ROOT_DATA_DIR"],
     labels_map = DATA_HYPERPARAMETERS["CLASSES"]
     print(f"\nClasses: {labels_map}")
 
-    return train_data_loader, train_data, val_data, test_data
+    return train_data_loader_rec, train_dataloader_cls, val_dataloader, test_dataloader
