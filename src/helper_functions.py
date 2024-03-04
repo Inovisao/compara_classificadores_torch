@@ -609,10 +609,6 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
 
     """
     print("Starting test process")
-    # Initialize metrics
-    precision_metric = Precision(task="multiclass", num_classes=len(labels_map)).to(device)
-    recall_metric = Recall(task="multiclass", num_classes=len(labels_map)).to(device)
-    fscore_metric = F1Score(task="multiclass", num_classes=len(labels_map)).to(device)
 
     predictions = []
     true_labels = []
@@ -629,19 +625,12 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
             # Forward pass
             _, cls_output = model(images, images)
 
-            # Update metrics
-            precision_metric.update(cls_output, labels)
-            recall_metric.update(cls_output, labels)
-            fscore_metric.update(cls_output, labels)
-
             # Store predictions and true labels
             predictions.extend(cls_output.argmax(dim=1).cpu().numpy())
             true_labels.extend(labels.cpu().numpy())
 
-    # Compute average metrics
-    avg_precision = precision_metric.compute().item()
-    avg_recall = recall_metric.compute().item()
-    avg_fscore = fscore_metric.compute().item()
+    # Compute precision, recall, and F1 score
+    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(true_labels, predictions, average="macro")
 
     # Compute confusion matrix
     matrix = metrics.confusion_matrix(true_labels, predictions)
@@ -658,11 +647,12 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
 
     # Print final results
     print("Final results:")
-    print("Precision:", avg_precision)
-    print("Recall:", avg_recall)
-    print("F1 Score:", avg_fscore)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", fscore)
 
-    return avg_precision, avg_recall, avg_fscore
+    return precision, recall, fscore
+
 
 def plot_history(history, path_to_save):
     """

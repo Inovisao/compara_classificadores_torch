@@ -157,6 +157,7 @@ def main():
 
     # Load the best weights for testing.
     model.load_state_dict(torch.load(path_to_save))
+    model.to(device)
 
     path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"
     path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"

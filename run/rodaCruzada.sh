@@ -69,7 +69,7 @@ do
    done
    
    run=${Teste#*_}
-   #bash ./roda.sh $run
+   bash ./roda.sh $run
    if [ "$rodaSiamesa" = true ]
    then
       bash ./rodaSiamesa.sh $run
