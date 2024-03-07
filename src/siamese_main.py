@@ -26,7 +26,8 @@ class ContrastiveLoss(nn.Module):
 
     def forward(self, euclidean_distance, target):
         loss_contrastive = torch.mean((target) * torch.log(torch.pow((1+(1/euclidean_distance)),euclidean_distance)) +
-                                      (1 - target) * (1-torch.log(torch.pow((1+(1/euclidean_distance)),euclidean_distance))))
+                                      (1 - target) * (1 - torch.log(torch.pow((1+(1/euclidean_distance)),euclidean_distance))) *
+                                      (euclidean_distance <= self.margin))
 
         return loss_contrastive
 
