@@ -129,6 +129,39 @@ for (possible_factor in possible_factors) {
   }
 }
 
+one_way_anova <- function(dataframe, factors) {
+  # Applies one-way ANOVA and Tukey's HSD test to the factor in the list for each metric.
+  # The response variables are precision, recall, and fscore.
+  sink("../results_dl/one_way.txt")
+  
+  factor_name <- sprintf("%s", factors[1])
+  
+  # One-way ANOVA and Tukey's HSD test for precision
+  cat(sprintf('\n\n====>>> TESTING: PRECISION for %s =============== \n\n', factor_name))
+  aov_result_precision <- aov(precision ~ ., data = subset(dataframe, select = c(factor_name, "precision")))
+  print(summary(aov_result_precision))
+  cat("\n\n====>>> Tukey's HSD TEST for PRECISION =============== \n\n")
+  tukey_precision <- TukeyHSD(aov_result_precision)
+  print(tukey_precision)
+  
+  # One-way ANOVA and Tukey's HSD test for recall
+  cat(sprintf('\n\n====>>> TESTING: RECALL for %s =============== \n\n', factor_name))
+  aov_result_recall <- aov(recall ~ ., data = subset(dataframe, select = c(factor_name, "recall")))
+  print(summary(aov_result_recall))
+  cat("\n\n====>>> Tukey's HSD TEST for RECALL =============== \n\n")
+  tukey_recall <- TukeyHSD(aov_result_recall)
+  print(tukey_recall)
+  
+  # One-way ANOVA and Tukey's HSD test for fscore
+  cat(sprintf('\n\n====>>> TESTING: FSCORE for %s =============== \n\n', factor_name))
+  aov_result_fscore <- aov(fscore ~ ., data = subset(dataframe, select = c(factor_name, "fscore")))
+  print(summary(aov_result_fscore))
+  cat("\n\n====>>> Tukey's HSD TEST for FSCORE =============== \n\n")
+  tukey_fscore <- TukeyHSD(aov_result_fscore)
+  print(tukey_fscore)
+  
+  sink()
+}
 
 two_way_anova <- function(dataframe, factors) {
   # Applies two way anova to any two factors given in a list.
@@ -193,7 +226,9 @@ three_way_anova <- function(dataframe, factors) {
 }
 
 # Apply anova according to the number of factors.
-if (length(factors) == 2) {
+if (length(factors) == 1){
+  one_way_anova(data, factors)
+} else if (length(factors) == 2) {
   two_way_anova(data, factors)
 } else if (length(factors) == 3) {
   three_way_anova(data, factors)
@@ -260,73 +295,73 @@ for (metric in metrics) {
   dir.create(paste("../results_dl/matrices_for_best_", metric, sep=""))
   # Get the combination with highest precision median.
   best <- median_values %>% filter(median_values[[metric]] == max(median_values[[metric]]))
-  
+
   print(best)
   # Create the filename.
   filename = sprintf("%s_%s_%s_MATRIX.csv", best$original_arch_names, best$original_optim_names, format(best$learning_rate, scientific=FALSE))
-  
+
   # Get the lines of the combination across different folds.
   across_folds <- dt[dt$architecture == best$architecture &
                       dt$optimizer == best$optimizer &
                       dt$learning_rate == best$learning_rate]
-  
+
   # Get the number of folds.
   num_folds <- nrow(across_folds)
 
   # Get a list of strings like "fold_n", a list of classes.
   folds <- sprintf("fold_%d", seq(1:num_folds))
   classes <- list.files("../data/all")
-  # Iterate over the folds to get the data for the matrix.  
+  # Iterate over the folds to get the data for the matrix.
   for (fold in folds) {
-    
+
     # Read the matrix for one fold.
     matrix <- read.table(paste('../resultsNfolds/', fold, '/matrix/', sub("fold_", "", fold), "_", filename, sep=""), sep=',',header=FALSE)
-    
+
     # Get only the values, without class numbers.
     filtered <- matrix[-1, -1]
-    
+
     # Normalize the matrix.
     normalized <- filtered / sum(filtered)
-    
+
     # Accumulate the values to get a matrix with mean values.
     if (fold == "fold_1") {
       mean_matrix <- normalized
     } else {
       mean_matrix <- mean_matrix + normalized
     }
-    
+
     rounded <- round(normalized, 2)
     colnames(rounded) <- classes
     with_names <- cbind(classes, rounded)
-    
+
     confusion_matrix <- reshape2::melt(with_names)
-    
+
     confusion_matrix <- confusion_matrix %>% mutate(variable=factor(variable),
                                                     classes=factor(classes, levels=rev(unique(classes))))
-    
-    
+
+
     matrix_title <- sprintf("Fold %s: %s, %s. LR = %s.", sub("fold_", "", fold), best$architecture, best$optimizer, format(best$learning_rate, scientific=TRUE))
-    
-    g <- ggplot(confusion_matrix, 
-                aes(x=variable,y=classes, fill=value)) + 
+
+    g <- ggplot(confusion_matrix,
+                aes(x=variable,y=classes, fill=value)) +
                 geom_tile() +
                 xlab("Predicted") +
                 ylab("Measured") +
                 ggtitle(matrix_title) +
                 labs(fill="Scale") +
                 geom_text(aes(label=value)) +
-                theme(axis.text.x=element_text(angle=60, hjust = 1), aspect.ratio=1)   
-    
+                theme(axis.text.x=element_text(angle=60, hjust = 1), aspect.ratio=1)
+
     ggsave(paste('../results_dl/matrices_for_best_', metric, "/", best$architecture, "_", best$optimizer, "_", best$learning_rate, "_", fold, '_cm.png',sep=""),
-           g, 
-           width=6, 
-           height=5, 
+           g,
+           width=6,
+           height=5,
            limitsize = FALSE)
-    
+
     print(g)
-    
+
   }
-  
+
   mean_matrix <- mean_matrix / num_folds
   rounded <- round(mean_matrix, 2)
   colnames(rounded) <- classes
@@ -334,18 +369,18 @@ for (metric in metrics) {
   confusion_matrix <- reshape2::melt(with_names)
   confusion_matrix <- confusion_matrix %>% mutate(variable=factor(variable), # alphabetical order by default
                                                   classes=factor(classes, levels=rev(unique(classes)))) # force r
-  
+
   matrix_title <- sprintf("Matrix (mean): %s, %s. LR = %s.", best$architecture, best$optimizer, best$learning_rate)
-  g <- ggplot(confusion_matrix, 
-              aes(variable, classes, fill=value)) + 
-              geom_tile() + 
-              xlab("Predicted") + 
-              ylab("Measured") + 
-              ggtitle(matrix_title) + 
-              labs(fill="Scale") + 
-              geom_text(aes(label=value)) + 
+  g <- ggplot(confusion_matrix,
+              aes(variable, classes, fill=value)) +
+              geom_tile() +
+              xlab("Predicted") +
+              ylab("Measured") +
+              ggtitle(matrix_title) +
+              labs(fill="Scale") +
+              geom_text(aes(label=value)) +
               theme(axis.text.x=element_text(angle=60, hjust=1))
-  
+
   ggsave(paste('../results_dl/matrices_for_best_', metric, "/", best$architecture, "_", best$optimizer, "_", best$learning_rate, '_MEAN_cm.png', sep=""), g, scale=1, width=6, height=5)
   print(g)
 }
