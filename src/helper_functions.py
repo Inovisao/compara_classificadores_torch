@@ -503,6 +503,32 @@ def fit_siamese(train_dataloader_rec, train_dataloader_cls, val_dataloader, mode
         "val_acc": val_acc_history
     })
 
+def save_confused_image(path_to_save_matrix_csv, image, image_file_name, label, prediction):
+    """
+    This function saves the images that were wrongly classified.
+
+    Args:
+        path_to_save_matrix_csv: the path to the csv file containing the confusion matrix.
+        image: the image to be saved.
+        image_file_name: the image file name to be saved.
+        label: the true label of the image.
+        prediction: the predicted label of the image.
+
+    Returns: nothing, but saves the image file with the name of the true label and the predicted label.
+
+    """
+
+    path_to_confused_images = os.path.join(path_to_save_matrix_csv, "confused_images")
+    if not os.path.exists(path_to_confused_images): os.makedirs(path_to_confused_images)
+    path_to_label = os.path.join(path_to_confused_images, label)
+    if not os.path.exists(path_to_label): os.makedirs(path_to_label)
+    path_to_prediction = os.path.join(path_to_label, prediction)
+    if not os.path.exists(path_to_prediction): os.makedirs(path_to_prediction)
+    path_to_save_image = os.path.join(path_to_prediction, image_file_name)
+    image.save(path_to_save_image)
+
+
+
 
 def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     """
@@ -554,6 +580,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
             for i in range(len(img)):
                 if (labels_map[prediction[i]] != labels_map[label[i]]):
                     print(f"File {filename[i]} is {labels_map[label[i]]}. Predicted as: {labels_map[prediction[i]]}.\nProbabilities: {prediction_prob_values[i]}\n")
+                    save_confused_image(path_to_save_matrix_csv, img[i], filename[i], labels_map[label[i]], labels_map[prediction[i]])
 
 
     # Calculate the accuracy.
