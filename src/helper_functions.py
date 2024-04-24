@@ -518,6 +518,10 @@ def save_confused_image(path_to_save_matrix_csv, image, image_file_name, label, 
 
     """
 
+    # Retira a extensão de path_to_save_matrix_csv
+    path_to_save_matrix_csv = path_to_save_matrix_csv.split('.csv')[0]
+    
+    
     path_to_confused_images = os.path.join(path_to_save_matrix_csv, "confused_images")
     if not os.path.exists(path_to_confused_images): os.makedirs(path_to_confused_images)
     path_to_label = os.path.join(path_to_confused_images, label)
@@ -525,7 +529,10 @@ def save_confused_image(path_to_save_matrix_csv, image, image_file_name, label, 
     path_to_prediction = os.path.join(path_to_label, prediction)
     if not os.path.exists(path_to_prediction): os.makedirs(path_to_prediction)
     path_to_save_image = os.path.join(path_to_prediction, image_file_name)
-    image.save(path_to_save_image)
+
+    image = image.cpu().numpy().transpose((1, 2, 0))
+    plt.imsave(path_to_save_image, image)
+
 
 
 
