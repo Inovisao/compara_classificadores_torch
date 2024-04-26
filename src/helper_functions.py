@@ -295,13 +295,23 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
     train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
     num_correct_rec, num_correct_cls = 0, 0
 
-    for batch in dataloader_rec:
-        anchor = batch[0].to(device)
-        validation = batch[1].to(device)
-        labels = batch[2].float().to(device)
+    # Recognition part
+    for batch_rec, batch_cls in zip(dataloader_rec, dataloader_cls):
+        anchor_ids = batch_rec[0]
+        validation_ids = batch_rec[1]
+        labels_rec = batch_rec[2].float().to(device)
+
+        anchor_images = []
+        validation_images = []
+        for anchor_id, validation_id in zip(anchor_ids, validation_ids):
+            anchor_images.append(dataloader_cls.dataset[anchor_id][0])
+            validation_images.append(dataloader_cls.dataset[validation_id][0])
+
+        anchor = torch.stack(anchor_images).to(device)
+        validation = torch.stack(validation_images).to(device)
 
         rec_output, _ = model(anchor, validation)
-        loss_rec = loss_fn_rec(rec_output, labels)
+        loss_rec = loss_fn_rec(rec_output, labels_rec)
 
         optimizer_rec.zero_grad()
         loss_rec.backward()
@@ -310,20 +320,20 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
         train_loss_rec += loss_rec.item()
         num_correct_rec += (rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
 
-    for batch in dataloader_cls:
-        images = batch[0].to(device)
-        labels = batch[1].to(device)
+    # Classification part
+    for batch_cls in dataloader_cls:
+        images_cls = batch_cls[0].to(device)
+        labels_cls = batch_cls[1].to(device)
 
-        _, cls_output = model(images, images)
-        loss_cls = loss_fn_cls(cls_output, labels)
+        _, cls_output = model(images_cls, images_cls)
+        loss_cls = loss_fn_cls(cls_output, labels_cls)
 
         optimizer_cls.zero_grad()
         loss_cls.backward()
         optimizer_cls.step()
 
         train_loss_cls += loss_cls.item()
-        num_correct_cls += (cls_output.argmax(1) == labels).type(torch.float).sum().item()
-
+        num_correct_cls += (cls_output.argmax(1) == labels_cls).type(torch.float).sum().item()
 
     print('Training statistics:')
 
