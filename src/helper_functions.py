@@ -290,40 +290,46 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
     size_cls = len(dataloader_cls.dataset)
     num_batches_rec = len(dataloader_rec)
     num_batches_cls = len(dataloader_cls)
+    device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
+    print(device)
 
     model.train()
     train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
     num_correct_rec, num_correct_cls = 0, 0
 
     # Recognition part
-    for batch_rec, batch_cls in zip(dataloader_rec, dataloader_cls):
-        anchor_ids = batch_rec[0]
-        validation_ids = batch_rec[1]
-        labels_rec = batch_rec[2].float().to(device)
-
-        anchor_images = []
-        validation_images = []
-        for anchor_id, validation_id in zip(anchor_ids, validation_ids):
-            anchor_images.append(dataloader_cls.dataset[anchor_id][0])
-            validation_images.append(dataloader_cls.dataset[validation_id][0])
+    for batch_ids in dataloader_rec:
+        anchor_ids, validation_ids, labels_rec = batch_ids
+        anchor_images = [dataloader_cls.dataset[batch_id*dataloader_cls.batch_size + id_inside_batch][0] for batch_id, id_inside_batch in anchor_ids]
+        validation_images = [dataloader_cls.dataset[batch_id*dataloader_cls.batch_size + id_inside_batch][0] for batch_id, id_inside_batch in validation_ids]
 
         anchor = torch.stack(anchor_images).to(device)
         validation = torch.stack(validation_images).to(device)
+        labels_rec = labels_rec.to(device)
 
         rec_output, _ = model(anchor, validation)
-        loss_rec = loss_fn_rec(rec_output, labels_rec)
+        loss_rec = loss_fn_rec(rec_output, labels_rec.float().to(device))
 
         optimizer_rec.zero_grad()
         loss_rec.backward()
         optimizer_rec.step()
 
         train_loss_rec += loss_rec.item()
-        num_correct_rec += (rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
+        num_correct_rec += ((rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]) == labels_rec).sum().item()
+
+    print('Training statistics:')
+    print('Recognition:')
+    print('Total number of images: ', size_rec)
+    print('Total number of correct predictions: ', num_correct_rec)
+    train_accuracy_rec = num_correct_rec / size_rec
+    print('Accuracy: ', train_accuracy_rec)
+    train_loss_rec /= num_batches_rec
+    print('Mean loss: ', train_loss_rec)
 
     # Classification part
-    for batch_cls in dataloader_cls:
-        images_cls = batch_cls[0].to(device)
-        labels_cls = batch_cls[1].to(device)
+    for images_cls, labels_cls, _ in dataloader_cls:
+        images_cls = images_cls.to(device)
+        labels_cls = labels_cls.to(device)
 
         _, cls_output = model(images_cls, images_cls)
         loss_cls = loss_fn_cls(cls_output, labels_cls)
@@ -333,17 +339,7 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
         optimizer_cls.step()
 
         train_loss_cls += loss_cls.item()
-        num_correct_cls += (cls_output.argmax(1) == labels_cls).type(torch.float).sum().item()
-
-    print('Training statistics:')
-
-    print('Recognition:')
-    print('Total number of images: ', size_rec)
-    print('Total number of correct predictions: ', num_correct_rec)
-    train_accuracy_rec = num_correct_rec / size_rec
-    print('Accuracy: ', train_accuracy_rec)
-    train_loss_rec /= num_batches_rec
-    print('Mean loss: ', train_loss_rec)
+        num_correct_cls += (cls_output.argmax(1) == labels_cls).sum().item()
 
     print('Classification:')
     print('Total number of images: ', size_cls)
@@ -371,6 +367,8 @@ def validation_siamese(val_dataloader, model, loss_fn):
     size = len(val_dataloader.dataset)
     num_batches = len(val_dataloader)
 
+    device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
+    print(device)
     # Put the model in evaluation mode.
     model.eval()
 
@@ -657,6 +655,8 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
     predictions = []
     true_labels = []
 
+    device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
+    print(device)
     # Put the model in evaluation mode.
     model.eval()
 
