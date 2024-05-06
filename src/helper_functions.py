@@ -290,43 +290,33 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
     size_cls = len(dataloader_cls.dataset)
     num_batches_rec = len(dataloader_rec)
     num_batches_cls = len(dataloader_cls)
+    device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
 
     model.train()
     train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
     num_correct_rec, num_correct_cls = 0, 0
 
-    for batch in dataloader_rec:
-        anchor = batch[0].to(device)
-        validation = batch[1].to(device)
-        labels = batch[2].float().to(device)
+    # Recognition part
+    for batch_ids in dataloader_rec:
+        anchor_ids, validation_ids, labels_rec = batch_ids
+        anchor_images = [dataloader_cls.dataset[batch_id*dataloader_cls.batch_size + id_inside_batch][0] for batch_id, id_inside_batch in anchor_ids]
+        validation_images = [dataloader_cls.dataset[batch_id*dataloader_cls.batch_size + id_inside_batch][0] for batch_id, id_inside_batch in validation_ids]
+
+        anchor = torch.stack(anchor_images).to(device)
+        validation = torch.stack(validation_images).to(device)
+        labels_rec = labels_rec.to(device)
 
         rec_output, _ = model(anchor, validation)
-        loss_rec = loss_fn_rec(rec_output, labels)
+        loss_rec = loss_fn_rec(rec_output, labels_rec.float().to(device))
 
         optimizer_rec.zero_grad()
         loss_rec.backward()
         optimizer_rec.step()
 
         train_loss_rec += loss_rec.item()
-        num_correct_rec += (rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]).sum().item()
-
-    for batch in dataloader_cls:
-        images = batch[0].to(device)
-        labels = batch[1].to(device)
-
-        _, cls_output = model(images, images)
-        loss_cls = loss_fn_cls(cls_output, labels)
-
-        optimizer_cls.zero_grad()
-        loss_cls.backward()
-        optimizer_cls.step()
-
-        train_loss_cls += loss_cls.item()
-        num_correct_cls += (cls_output.argmax(1) == labels).type(torch.float).sum().item()
-
+        num_correct_rec += ((rec_output <= SIAMESE_MODEL_HYPERPARAMETERS["THRESHOLD"]) == labels_rec).sum().item()
 
     print('Training statistics:')
-
     print('Recognition:')
     print('Total number of images: ', size_rec)
     print('Total number of correct predictions: ', num_correct_rec)
@@ -334,6 +324,21 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
     print('Accuracy: ', train_accuracy_rec)
     train_loss_rec /= num_batches_rec
     print('Mean loss: ', train_loss_rec)
+
+    # Classification part
+    for images_cls, labels_cls, _ in dataloader_cls:
+        images_cls = images_cls.to(device)
+        labels_cls = labels_cls.to(device)
+
+        _, cls_output = model(images_cls, images_cls)
+        loss_cls = loss_fn_cls(cls_output, labels_cls)
+
+        optimizer_cls.zero_grad()
+        loss_cls.backward()
+        optimizer_cls.step()
+
+        train_loss_cls += loss_cls.item()
+        num_correct_cls += (cls_output.argmax(1) == labels_cls).sum().item()
 
     print('Classification:')
     print('Total number of images: ', size_cls)
@@ -361,6 +366,7 @@ def validation_siamese(val_dataloader, model, loss_fn):
     size = len(val_dataloader.dataset)
     num_batches = len(val_dataloader)
 
+    device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
     # Put the model in evaluation mode.
     model.eval()
 
@@ -647,6 +653,8 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
     predictions = []
     true_labels = []
 
+    device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
+    print(device)
     # Put the model in evaluation mode.
     model.eval()
 
@@ -655,6 +663,7 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
         for batch in test_dataloader:
             images = batch[0].to(device)
             labels = batch[1].to(device)
+            filenames = batch[2]
 
             # Forward pass
             _, cls_output = model(images, images)
@@ -662,6 +671,11 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
             # Store predictions and true labels
             predictions.extend(cls_output.argmax(dim=1).cpu().numpy())
             true_labels.extend(labels.cpu().numpy())
+
+            for i in range(len(images)):
+                if (labels_map[predictions[i]] != labels_map[true_labels[i]]):
+                    print(f"File {filenames[i]} is {labels_map[true_labels[i]]}. Predicted as: {labels_map[predictions[i]]}.\n")
+                    save_confused_image(path_to_save_matrix_csv, images[i], filenames[i], labels_map[true_labels[i]], labels_map[predictions[i]])
 
     # Compute precision, recall, and F1 score
     precision, recall, fscore, _ = metrics.precision_recall_fscore_support(true_labels, predictions, average="macro")
@@ -686,6 +700,7 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
     print("F1 Score:", fscore)
 
     return precision, recall, fscore
+
 
 
 def plot_history(history, path_to_save):
@@ -749,7 +764,6 @@ def plot_history(history, path_to_save):
     fig.tight_layout()
     # Save the plot.
     plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
-
 
 
 def plot_history_siamese(history, path_to_save):
