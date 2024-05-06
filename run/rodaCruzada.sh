@@ -69,6 +69,12 @@ do
    done
    
    run=${Teste#*_}
+
+   mkdir -p ../results
+   rm -rf ../results/*
+   mkdir -p ../results/history
+   mkdir -p ../results/matrix
+
    bash ./roda.sh $run
    if [ "$rodaSiamesa" = true ]
    then
