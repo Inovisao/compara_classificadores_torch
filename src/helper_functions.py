@@ -291,7 +291,6 @@ def train_siamese(dataloader_rec, dataloader_cls, model, loss_fn_rec, loss_fn_cl
     num_batches_rec = len(dataloader_rec)
     num_batches_cls = len(dataloader_cls)
     device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
-    print(device)
 
     model.train()
     train_loss_rec, train_accuracy_rec, train_loss_cls, train_accuracy_cls = 0, 0, 0, 0
@@ -368,7 +367,6 @@ def validation_siamese(val_dataloader, model, loss_fn):
     num_batches = len(val_dataloader)
 
     device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
-    print(device)
     # Put the model in evaluation mode.
     model.eval()
 
@@ -665,6 +663,7 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
         for batch in test_dataloader:
             images = batch[0].to(device)
             labels = batch[1].to(device)
+            filenames = batch[2]
 
             # Forward pass
             _, cls_output = model(images, images)
@@ -672,6 +671,11 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
             # Store predictions and true labels
             predictions.extend(cls_output.argmax(dim=1).cpu().numpy())
             true_labels.extend(labels.cpu().numpy())
+
+            for i in range(len(images)):
+                if (labels_map[predictions[i]] != labels_map[true_labels[i]]):
+                    print(f"File {filenames[i]} is {labels_map[true_labels[i]]}. Predicted as: {labels_map[predictions[i]]}.\n")
+                    save_confused_image(path_to_save_matrix_csv, images[i], filenames[i], labels_map[true_labels[i]], labels_map[predictions[i]])
 
     # Compute precision, recall, and F1 score
     precision, recall, fscore, _ = metrics.precision_recall_fscore_support(true_labels, predictions, average="macro")
@@ -696,6 +700,7 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
     print("F1 Score:", fscore)
 
     return precision, recall, fscore
+
 
 
 def plot_history(history, path_to_save):
@@ -759,7 +764,6 @@ def plot_history(history, path_to_save):
     fig.tight_layout()
     # Save the plot.
     plt.savefig(path_to_save, bbox_extra_artists=(suptitle, ), bbox_inches="tight", dpi=300)
-
 
 
 def plot_history_siamese(history, path_to_save):

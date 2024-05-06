@@ -7,7 +7,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
 ndobras=10  
-rodaSiamesa=false
+rodaSiamesa=true
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)
@@ -69,6 +69,12 @@ do
    done
    
    run=${Teste#*_}
+
+   mkdir -p ../results
+   rm -rf ../results/*
+   mkdir -p ../results/history
+   mkdir -p ../results/matrix
+
    bash ./roda.sh $run
    if [ "$rodaSiamesa" = true ]
    then
