@@ -29,7 +29,7 @@ def get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
     # resize and apply data augmentation, and, in both cases, it may or may not also normalize the data.
     if data_augmentation:
         transforms_pipeline = transforms.Compose([
-            transforms.Resize((image_size, image_size)),
+            transforms.Resize((image_size, image_size), antialias=None),
             transforms.ColorJitter(),
             transforms.RandomGrayscale(),
             transforms.RandomInvert(),
@@ -51,7 +51,7 @@ def get_transforms(image_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
         ])
     else:
         transforms_pipeline = transforms.Compose([
-            transforms.Resize((image_size, image_size)),
+            transforms.Resize((image_size, image_size), antialias=None),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if DATA_HYPERPARAMETERS["NORMALIZE"] else Identity(),
         ])
 
