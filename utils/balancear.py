@@ -46,8 +46,9 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
     # para igualar a quantidade da maior classe
     fator_por_classe = [max(n_imgs) - n for n in n_imgs]
 
-    # Número de imagens aumentadas em cada classe
+    # Contador que será usado nos nomes dos arquivos
     n_imgs_aumentadas = [0] * n_classes
+
 
 
     # Crie um dicionário para armazenar os índices de cada classe
@@ -87,7 +88,7 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
             if not os.path.exists(pasta_da_classe):
                 os.makedirs(pasta_da_classe)
 
-            img.save(pasta_da_classe + '/' + 'SINTETICA_'+str(n_imgs_aumentadas[label]) + '.jpg')
+            img.save(pasta_da_classe + '/' + 'SINTETICA_F'+str(fold)+'_'+str(n_imgs_aumentadas[label]) + '.jpg')
             n_imgs_aumentadas[label] += 1
 
 
