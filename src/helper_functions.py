@@ -607,6 +607,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
 
     # Convert the matrix into a pandas dataframe.
     df_matrix = pd.DataFrame(matrix)
+    df_matrix = df_matrix.applymap(lambda x: f"{x:.0f}" if x > 99 else x)
 
     # Save the matrix as a csv file.
     df_matrix.to_csv(path_to_save_matrix_csv)
@@ -682,7 +683,8 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
 
     # Compute confusion matrix
     matrix = metrics.confusion_matrix(true_labels, predictions)
-    df_matrix = pd.DataFrame(matrix, columns=labels_map, index=labels_map)
+    df_matrix = pd.DataFrame(matrix)
+    df_matrix = df_matrix.applymap(lambda x: f"{x:.0f}" if x > 99 else x)
     df_matrix.to_csv(path_to_save_matrix_csv)
 
     # Plot confusion matrix
