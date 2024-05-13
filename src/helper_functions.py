@@ -601,20 +601,21 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
 
     # Create the confusion matrix.
     matrix = metrics.confusion_matrix(labels, predictions)
+    max_value = max(max(row) for row in matrix)
+    num_digits = len(str(max_value))
 
     # Get the classes for the matrix.
     classes = DATA_HYPERPARAMETERS["CLASSES"]
 
     # Convert the matrix into a pandas dataframe.
     df_matrix = pd.DataFrame(matrix)
-    df_matrix = df_matrix.applymap(lambda x: f"{x:.0f}" if x > 99 else x)
 
     # Save the matrix as a csv file.
     df_matrix.to_csv(path_to_save_matrix_csv)
 
     # Create a graphical matrix.
     plt.figure()
-    sn.heatmap(df_matrix, annot=True, yticklabels=classes, xticklabels=classes)
+    sn.heatmap(df_matrix, annot=True, yticklabels=classes, xticklabels=classes, fmt=f'.{num_digits}g')
     plt.title("Confusion matrix", fontsize=14)
     plt.xlabel("Predicted", fontsize=12)
     plt.ylabel("True", fontsize=12)
@@ -655,7 +656,6 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
     true_labels = []
 
     device = SIAMESE_MODEL_HYPERPARAMETERS["DEVICE"]
-    print(device)
     # Put the model in evaluation mode.
     model.eval()
 
@@ -683,13 +683,14 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
 
     # Compute confusion matrix
     matrix = metrics.confusion_matrix(true_labels, predictions)
+    max_value = max(max(row) for row in matrix)
+    num_digits = len(str(max_value))
     df_matrix = pd.DataFrame(matrix)
-    df_matrix = df_matrix.applymap(lambda x: f"{x:.0f}" if x > 99 else x)
     df_matrix.to_csv(path_to_save_matrix_csv)
 
     # Plot confusion matrix
     plt.figure()
-    sn.heatmap(df_matrix, annot=True, yticklabels=True, xticklabels=True)
+    sn.heatmap(df_matrix, annot=True, yticklabels=True, xticklabels=True, fmt=f'.{num_digits}g')
     plt.title("Confusion matrix", fontsize=14)
     plt.xlabel("Predicted", fontsize=12)
     plt.ylabel("True", fontsize=12)
