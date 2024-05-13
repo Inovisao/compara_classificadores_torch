@@ -8,3 +8,4 @@ resultsNfolds/
 results_dl/
 data/
 model_checkpoints/
+.vscode/
