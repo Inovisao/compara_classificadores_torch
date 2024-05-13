@@ -7,6 +7,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
 ndobras=10  
+rodaPadrao=true
 rodaSiamesa=true
 
 # Verifica se o usuário passou como parâmetro
@@ -75,7 +76,10 @@ do
    mkdir -p ../results/history
    mkdir -p ../results/matrix
 
-   bash ./roda.sh $run
+   if [ "$rodaPadrao" = true ]
+   then
+      bash ./roda.sh $run
+   fi
    if [ "$rodaSiamesa" = true ]
    then
       bash ./rodaSiamesa.sh $run
