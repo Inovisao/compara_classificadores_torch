@@ -7,7 +7,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
 ndobras=10  
-rodaSiamesa=true
+rodaSiamesa=false
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)
@@ -83,6 +83,7 @@ do
    mkdir -p ${pastaDobrasResultados}/${Teste}
    mv ${pastaResultados}/* ${pastaDobrasResultados}/${Teste}   
     
+   #break
 
 done
 

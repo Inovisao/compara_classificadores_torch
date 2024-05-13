@@ -7,6 +7,7 @@
 """
 from arch_optim import architectures, optimizers, gradcam_layer_getters, get_architecture, get_optimizer
 import data_manager
+import explainers
 import helper_functions
 from hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
 
@@ -132,6 +133,26 @@ def main():
     f = open("../results_dl/results.csv", "a")
     f.write(results)
     f.close()
+
+    
+    print("Explaining results...")
+
+    # Generate explanations
+    if ("gradcam" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
+        gradcam_layer = gradcam_layer_getters[args["architecture"]](model)
+        if gradcam_layer is None:
+            print("GradCAM is not available for this model.")
+        else:
+            print("Generating GradCAM explanations...")
+            if not os.path.exists("../results/gradcam"):
+                os.makedirs("../results/gradcam")
+        
+            if not os.path.exists(f"../results/gradcam/{model_name}"):
+                os.makedirs(f"../results/gradcam/{model_name}")
+
+            explainers.generate_gradcam(model, model_name, gradcam_layer, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+
+
 
     print("\nFinished execution.")
 

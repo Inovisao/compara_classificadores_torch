@@ -59,6 +59,7 @@ def vgg19(in_channels, out_classes, pretrained):
 def get_vgg19_gradcam_layer(model):
     return model.features[-3]
 
+
 def maxvit_rmlp_tiny_rw_256(in_channels, out_classes, pretrained):
     """
     Multi-axis vision transformer: https://arxiv.org/abs/2204.01697
