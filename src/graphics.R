@@ -310,7 +310,10 @@ for (metric in metrics) {
 
   # Get a list of strings like "fold_n", a list of classes.
   folds <- sprintf("fold_%d", seq(1:num_folds))
-  classes <- list.files("../data/all")
+  # Use system command to list files in the directory
+  class_files <- system("ls -1 ../data/all", intern = TRUE)
+  # Convert the result into a character vector
+  classes <- as.vector(class_files)
   # Iterate over the folds to get the data for the matrix.
   for (fold in folds) {
 

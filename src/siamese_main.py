@@ -131,7 +131,7 @@ def main():
     train_dataloader_rec, train_dataloader_cls, val_dataloader, test_dataloader = data_manager.get_siamese_data()
 
     # Give the model a name.
-    model_name = "siamese_" + str(args["run"]) + "_" + str(args["architecture"]) + \
+    model_name = str(args["run"]) + "_" + "siamese_" + str(args["architecture"]) + \
         "_" + str(args["optimizer"]) + "_" + str(args["learning_rate"])
 
     # Create a path to save the model.
