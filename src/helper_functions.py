@@ -577,7 +577,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
 
             # Make predictions with the model.
             prediction = model(img)
-            prediction_prob_values = softmax(prediction)
+            prediction_prob_values = softmax(prediction, dim=1)
 
             # Get the index of the prediction with the highest probability.
             prediction = prediction.argmax(1)
@@ -622,14 +622,14 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
     
     # Get some metrics.
-    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, average="macro")
+    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, average="macro", zero_division=0)
 
     # Write some results.
     print(f"Total number of predictions: {len(dataloader.dataset)}.")
     print(f"Number of correct predictions: {test_correct}.")
     print(f"Test accuracy: {(100 * acc):>0.2f}%.\n")
     print('\nPerformance metrics in the test set:')
-    print(metrics.classification_report(labels, predictions))
+    print(metrics.classification_report(labels, predictions, target_names=classes, zero_division=0))
 
     # Return the metrics.
     return precision, recall, fscore

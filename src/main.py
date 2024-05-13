@@ -116,6 +116,7 @@ def main():
     path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"    
     path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
 
+    print("\n\nTesting the model...\n")
     # Test, save the results and get precision, recall and fscore.
     precision, recall, fscore = helper_functions.test(dataloader=test_dataloader,
                                                       model=model, 

@@ -166,6 +166,7 @@ def get_swinv2_cr_base_224(in_channels, out_classes, pretrained):
 
 def get_swinv2_cr_base_224_gradcam_layer(model):
     print("Gradcam not available for winv2_cr_base_224.")
+    return None
 
 
 def get_convnext_base(in_channels, out_classes, pretrained):
@@ -264,6 +265,7 @@ def get_ielt(in_channels, out_classes, pretrained):
 
 def get_ielt_gradcam_layer(model):
     print("GradCAM not available for IELT.")
+    return None
     
 
 def get_default_siamese(in_channels, out_classes, pretrained):
@@ -286,6 +288,7 @@ def get_default_siamese(in_channels, out_classes, pretrained):
 
 def get_siamese_gradcam_layer(model):
     print("GradCAM not available for Siamese.")
+    return None
 
 
 

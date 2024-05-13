@@ -16,8 +16,6 @@ def generate_gradcam(model, model_name, layer, test_dataloader, class_list, devi
         # Send to the device and get predictions
         imgs, labels = imgs.to(device), labels.to(device)
         predictions = model(imgs)
-
-        # Predictions indices
         pred_indices = torch.argmax(predictions, dim=1)
 
         
@@ -26,12 +24,14 @@ def generate_gradcam(model, model_name, layer, test_dataloader, class_list, devi
             original_img = img.cpu().numpy().transpose(1, 2, 0)
 
             # Plot the original image
-            plt.subplot(len(class_list)+1, 1, 1)
-            plt.imshow(original_img)
-            plt.title("Original Image", fontdict={'fontsize': 10})
-            plt.axis('off')
+            #plt.subplot(len(class_list)+1, 1, 1)
+            fig, axs = plt.subplots(len(class_list)+1, 1)
+            axs[0].imshow(original_img)
+            axs[0].set_title("Original Image", fontdict={'fontsize': 10})
+            axs[0].axis('off')
 
 
+            # Get the attributions for each class and plot them
             for c in range(len(class_list)):
                 attributions = explainer.attribute(img.unsqueeze(0), target=c)
                 attributions = attributions.cpu().detach().numpy().transpose(0, 2, 3, 1).squeeze()
@@ -60,20 +60,25 @@ def generate_gradcam(model, model_name, layer, test_dataloader, class_list, devi
                 img_for_plot[:, :, 0] = np.abs(neg_attr)
 
 
-                plt.subplot(len(class_list)+1, 1, c+2)
-                plt.imshow(original_img)
-                plt.imshow(img_for_plot, alpha=0.4)
-                plt.title(class_list[c], fontdict={'fontsize': 8})
-                plt.axis('off')
-            
-            plt.tight_layout()
-            # Set suptitle
-            plt.suptitle(f"GradCAM: label = {class_list[labels[i]]}, prediction = {class_list[pred_indices[i]]}", fontsize=10)
+                # Plot the image
+                axs[c+1].imshow(img_for_plot)
+                axs[c+1].imshow(original_img, alpha=0.4)
+                axs[c+1].set_title(class_list[c], fontdict={'fontsize': 10})
+                axs[c+1].axis('off')
+
+
+            fig.tight_layout()
+            fig.suptitle(f"GradCAM: label = {class_list[labels[i]]}, prediction = {class_list[pred_indices[i]]}\n", fontsize=10)
             plt.savefig(f"../results/gradcam/{model_name}/is_{class_list[labels[i]]}_pred_as_{class_list[pred_indices[i]]}_{filenames[i]}.png", bbox_inches='tight', dpi=300)
+            plt.close()
 
 
+def generate_occlusion():
+    pass
 
 
+def generate_shap():
+    pass
 
 
 

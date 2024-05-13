@@ -47,7 +47,7 @@ SIAMESE_DATA_HYPERPARAMETERS = {
 
 # No learning rate here. The lr must be set in roda.sh.
 MODEL_HYPERPARAMETERS = {
-    "NUM_EPOCHS": 5,
+    "NUM_EPOCHS": 3,
     "PATIENCE": 30,
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": False,
