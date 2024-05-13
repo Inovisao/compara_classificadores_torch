@@ -6,9 +6,8 @@
 export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
-ndobras=10  
-rodaPadrao=true
-rodaSiamesa=true
+ndobras=5  
+rodaSiamesa=false
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)
@@ -22,6 +21,7 @@ done
 
 # Nomes das pastas onde ficarão os resultados para cada dobra
 pastaDobrasImagens="../data/dobras"
+pastaDobraSinteticas="../data/dobras_sinteticas"
 pastaTreino="../data/train"
 pastaTeste="../data/test"
 pastaResultados="../results"
@@ -64,6 +64,7 @@ do
       then
          echo 'Adding to train' ${outro} 
          cp -R ${pastaDobrasImagens}/${outro}/* ${pastaTreino} 
+         cp -R ${pastaDobraSinteticas}/${outro}/* ${pastaTreino}
       fi   
 
 
@@ -76,10 +77,7 @@ do
    mkdir -p ../results/history
    mkdir -p ../results/matrix
 
-   if [ "$rodaPadrao" = true ]
-   then
-      bash ./roda.sh $run
-   fi
+   bash ./roda.sh $run
    if [ "$rodaSiamesa" = true ]
    then
       bash ./rodaSiamesa.sh $run
@@ -87,7 +85,6 @@ do
    mkdir -p ${pastaDobrasResultados}/${Teste}
    mv ${pastaResultados}/* ${pastaDobrasResultados}/${Teste}   
     
-   #break
 
 done
 
