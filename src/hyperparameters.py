@@ -12,7 +12,7 @@ NUM_CLASSES = len(CLASSES)
 
 # Hyperparameters pertaining to the data to be passed into the model.
 DATA_HYPERPARAMETERS = {
-    "IMAGE_SIZE": 256,
+    "IMAGE_SIZE": 640,
     "BATCH_SIZE": 32,
     "VAL_SPLIT": 0.2,
     "USE_DATA_AUGMENTATION": False,
@@ -52,7 +52,7 @@ MODEL_HYPERPARAMETERS = {
     "TOLERANCE": 0.1,
     "USE_TRANSFER_LEARNING": False,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "EXPLAINERS": ["gradcam"], # 
+    "EXPLAINERS": ["guided_backprop"], # 
 }
 
 

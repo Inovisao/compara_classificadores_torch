@@ -13,7 +13,7 @@ def plot_attributions(original_img, positive, label, prediction, class_list, sav
 
     for c in range(len(class_list)):
         # Plot positive attributions
-        axs[0, c].imshow(original_img)
+        #axs[0, c].imshow(original_img)
         axs[0, c].imshow(positive[c], alpha=0.4, cmap='jet')
         axs[0, c].set_title(class_list[c], fontdict={'fontsize': 8})
         #axs[0, c].axis('off')
@@ -30,7 +30,7 @@ def plot_attributions(original_img, positive, label, prediction, class_list, sav
 
         if negative is not None:
             # Plot negative attributions
-            axs[1, c].imshow(original_img)
+            #axs[1, c].imshow(original_img)
             axs[1, c].imshow(np.abs(negative[c]), alpha=0.4, cmap='jet')
 
             if c == 0:
@@ -142,11 +142,50 @@ def generate_occlusion(model,
             plot_attributions(original_img=original_img, positive=pos_attr, negative=neg_attr, label=labels[i], prediction=pred_indices[i], class_list=class_list, save_path=save_path)
 
 
-def generate_guided_backprop():
-    pass
+def generate_guided_backprop(model, model_name, test_dataloader, class_list, device):
+    explainer = attr.GuidedBackprop(model)
+
+    img_size = test_dataloader.dataset[0][0].shape[-1]
+
+    # Iterate over the batches
+    for imgs, labels, filenames in test_dataloader:
+        # Send to the device and get predictions
+        imgs, labels = imgs.to(device), labels.to(device)
+        predictions = model(imgs)
+        pred_indices = torch.argmax(predictions, dim=1)
+    
+        # Plot all the attributions in a grid for each image
+        for i, img in enumerate(imgs):
+            original_img = img.cpu().numpy().transpose(1, 2, 0)
+            true_idx = labels[i]
+            pred_idx = pred_indices[i]
+
+            # Get the attributions for each class in a list
+            attributions = list()
+            for c in range(len(class_list)):
+                attributions.append(explainer.attribute(img.unsqueeze(0), target=c))
+
+            # Get the attributions for different signs
+            pos_attr = [attr * (attr >= 0) for attr in attributions]
+            neg_attr = [attr * (attr < 0) for attr in attributions]
 
 
-def generate_guided_gradcam():
+            # Resize and normalize ? (zero if max == min)
+
+            pos_attr = [cv2.resize(attr.cpu().detach().numpy().transpose(0, 2, 3, 1).squeeze(), (img_size, img_size), interpolation=cv2.INTER_NEAREST) for attr in pos_attr]
+            pos_attr = [(attr - attr.min()) / (attr.max() - attr.min()) if attr.max() != attr.min() else np.zeros_like(attr) for attr in pos_attr]
+
+            neg_attr = [cv2.resize(attr.cpu().detach().numpy().transpose(0, 2, 3, 1).squeeze(), (img_size, img_size), interpolation=cv2.INTER_NEAREST) for attr in neg_attr]
+            neg_attr = [(attr - attr.min()) / (attr.max() - attr.min()) if attr.max() != attr.min() else np.zeros_like(attr) for attr in neg_attr]
+
+            # Plot the attributions
+            save_path = f"../results/guided_backprop/{model_name}/is_{class_list[true_idx]}_pred_as_{class_list[pred_idx]}_{filenames[i]}.png"
+            plot_attributions(original_img=original_img, positive=pos_attr, negative=neg_attr, label=labels[i], prediction=pred_indices[i], class_list=class_list, save_path=save_path)
+    
+
+
+
+def generate_guided_gradcam(model, model_name, layer, test_dataloader, class_list, device):
     pass
 
 

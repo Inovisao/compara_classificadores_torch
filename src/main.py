@@ -164,6 +164,16 @@ def main():
 
         explainers.generate_occlusion(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
 
+    if ("guided_backprop" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
+        print("Generating Guided BackProp explanations...")
+        if not os.path.exists("../results/guided_backprop"):
+            os.makedirs("../results/guided_backprop")
+        
+        if not os.path.exists(f"../results/guided_backprop/{model_name}"):
+            os.makedirs(f"../results/guided_backprop/{model_name}")
+
+        explainers.generate_guided_backprop(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+
 
     print("\nFinished execution.")
 
