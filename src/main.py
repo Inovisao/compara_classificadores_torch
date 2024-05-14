@@ -153,6 +153,7 @@ def main():
 
             explainers.generate_gradcam(model, model_name, gradcam_layer, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
 
+
     if ("occlusion" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
         print("Generating Occlusion explanations...")
         if not os.path.exists("../results/occlusion"):
