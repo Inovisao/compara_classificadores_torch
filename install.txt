@@ -8,7 +8,7 @@ conda activate cla_torch
 conda install --yes pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install --yes scikit-learn pandas numpy 
 # conda install --yes omnixai # Erro na compilação do pacote (wheels)
-pip install --no-input ml_collections timm tifffile opencv-python-headless wget torchmetrics matplotlib==3.5.3 seaborn==0.12.2 capcum
+pip install --no-input ml_collections timm tifffile opencv-python-headless wget torchmetrics matplotlib==3.5.3 seaborn==0.12.2 captum
 
 # Para instalar as dependência dos códigos em R
 sudo apt install libfontconfig1-dev
