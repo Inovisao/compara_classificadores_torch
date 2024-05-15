@@ -4,7 +4,7 @@ arqs=(resnet18 vit_relpos_base_patch32_plus_rpn_256)
 
 # OPTIMIZADORES
 #opt=(adam sgd adagrad lion sam)
-opt=(sgd adagrad)
+opt=(adagrad sgd)
 
 # LEARNING RATES
 learning_rates=(0.001 0.0001)
