@@ -140,39 +140,66 @@ def main():
 
     # Generate explanations
     if ("gradcam" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        gradcam_layer = gradcam_layer_getters[args["architecture"]](model)
-        if gradcam_layer is None:
-            print("GradCAM is not available for this model.")
-        else:
-            print("Generating GradCAM explanations...")
-            if not os.path.exists("../results/gradcam"):
-                os.makedirs("../results/gradcam")
+        try:
+            gradcam_layer = gradcam_layer_getters[args["architecture"]](model)
+            if gradcam_layer is None:
+                print("GradCAM is not available for this model.")
+            else:
+                print("Generating GradCAM explanations...")
+                if not os.path.exists("../results/gradcam"):
+                    os.makedirs("../results/gradcam")
         
-            if not os.path.exists(f"../results/gradcam/{model_name}"):
-                os.makedirs(f"../results/gradcam/{model_name}")
+                if not os.path.exists(f"../results/gradcam/{model_name}"):
+                    os.makedirs(f"../results/gradcam/{model_name}")
 
-            explainers.generate_gradcam(model, model_name, gradcam_layer, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+                explainers.generate_gradcam(model, model_name, gradcam_layer, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+        except Exception as e:
+            print("GradCAM went wrong")
+            print(e)
 
 
     if ("occlusion" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        print("Generating Occlusion explanations...")
-        if not os.path.exists("../results/occlusion"):
-            os.makedirs("../results/occlusion")
+        try:
+            print("Generating Occlusion explanations...")
+            if not os.path.exists("../results/occlusion"):
+                os.makedirs("../results/occlusion")
         
-        if not os.path.exists(f"../results/occlusion/{model_name}"):
-            os.makedirs(f"../results/occlusion/{model_name}")
+            if not os.path.exists(f"../results/occlusion/{model_name}"):
+                os.makedirs(f"../results/occlusion/{model_name}")
 
-        explainers.generate_occlusion(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+            explainers.generate_occlusion(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+        except Exception as e:
+            print("Occlusion went wrong")
+            print(e)        
+
 
     if ("guided_backprop" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        print("Generating Guided BackProp explanations...")
-        if not os.path.exists("../results/guided_backprop"):
-            os.makedirs("../results/guided_backprop")
+        try:
+            print("Generating Guided BackProp explanations...")
+            if not os.path.exists("../results/guided_backprop"):
+                os.makedirs("../results/guided_backprop")
         
-        if not os.path.exists(f"../results/guided_backprop/{model_name}"):
-            os.makedirs(f"../results/guided_backprop/{model_name}")
+            if not os.path.exists(f"../results/guided_backprop/{model_name}"):
+                os.makedirs(f"../results/guided_backprop/{model_name}")
 
-        explainers.generate_guided_backprop(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+            explainers.generate_guided_backprop(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+        except Exception as e:
+            print("Guided BackProp went wrong")
+            print(e)
+    
+    if ("shap" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
+        try:
+            print("Generating SHAP explanations...")
+            if not os.path.exists("../results/shap"):
+                os.makedirs("../results/shap")
+        
+            if not os.path.exists(f"../results/shap/{model_name}"):
+                os.makedirs(f"../results/shap/{model_name}")
+
+            explainers.generate_shap(model, model_name, train_dataloader, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
+        except Exception as e:
+            print("SHAP went wrong")
+            print(e)
 
 
     print("\nFinished execution.")

@@ -12,7 +12,7 @@ NUM_CLASSES = len(CLASSES)
 
 # Hyperparameters pertaining to the data to be passed into the model.
 DATA_HYPERPARAMETERS = {
-    "IMAGE_SIZE": 640,
+    "IMAGE_SIZE": 256,
     "BATCH_SIZE": 32,
     "VAL_SPLIT": 0.2,
     "USE_DATA_AUGMENTATION": False,
@@ -47,12 +47,12 @@ SIAMESE_DATA_HYPERPARAMETERS = {
 
 # No learning rate here. The lr must be set in roda.sh.
 MODEL_HYPERPARAMETERS = {
-    "NUM_EPOCHS": 3,
-    "PATIENCE": 10,
-    "TOLERANCE": 0.1,
-    "USE_TRANSFER_LEARNING": False,
+    "NUM_EPOCHS": 1000,
+    "PATIENCE": 100,
+    "TOLERANCE": 0.0,
+    "USE_TRANSFER_LEARNING": True,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "EXPLAINERS": ["guided_backprop"], # 
+    "EXPLAINERS": ["gradcam", "shap"], # Available: GradCAM, Occlusion, GuidedBackprop, SHAP
 }
 
 
