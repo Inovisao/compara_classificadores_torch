@@ -10,6 +10,9 @@ ndobras=5
 rodaPadrao=true
 rodaSiamesa=true
 
+# "treino" para apenas treinar, "teste" para apenas testar ou "completo" para executar ambos
+procedimento="completo"
+
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)
 while getopts "k:" flag; 
@@ -33,8 +36,11 @@ for((i=1;i<=$ndobras;i+=1)); do folds+=("fold_${i}"); done
 mkdir -p ../results_dl/           
 rm -rf ../results_dl/*
 
-mkdir -p ../model_checkpoints/
-rm -rf ../model_checkpoints/*
+if [ "$procedimento" != "teste" ]
+then
+   mkdir -p ../model_checkpoints/
+   rm -rf ../model_checkpoints/*
+fi
 
 echo  'run,learning_rate,architecture,optimizer,precision,recall,fscore' > ../results_dl/results.csv
 
@@ -76,7 +82,7 @@ do
    mkdir -p ../results/history
    mkdir -p ../results/matrix
 
-   bash ./roda.sh $run $rodaPadrao $rodaSiamesa
+   bash ./roda.sh $run $rodaPadrao $rodaSiamesa $procedimento
   
    mkdir -p ${pastaDobrasResultados}/${Teste}
    mv ${pastaResultados}/* ${pastaDobrasResultados}/${Teste}   
@@ -85,8 +91,11 @@ do
 
 done
 
-cd ../src
-Rscript ./graphics.R
-cd ../run
+if [ "$procedimento" != "treino" ]
+then
+   cd ../src
+   Rscript ./graphics.R
+   cd ../run
+fi
  
 

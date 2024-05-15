@@ -35,10 +35,13 @@ def get_args():
     arg_parser.add_argument("-o", "--optimizer", required=True, default=None, type=str)
 
     # Parse the number of the run.
-    arg_parser.add_argument("-r", "--run", required=True, default=None, type=int)
+    arg_parser.add_argument("-r", "--run", required=True, default=1, type=int)
     
     # Parse the learning rate.
     arg_parser.add_argument("-l", "--learning_rate", required=True, default=None, type=float)
+
+    # Parse the learning rate.
+    arg_parser.add_argument("-p", "--procedure", required=True, default="completo", type=str)
 
     # Parse the arguments and return them as a dictionary.
     return vars(arg_parser.parse_args())
