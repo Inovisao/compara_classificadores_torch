@@ -76,14 +76,8 @@ do
    mkdir -p ../results/history
    mkdir -p ../results/matrix
 
-   if [ "$rodaPadrao" = true ]
-   then
-      bash ./roda.sh $run
-   fi
-   if [ "$rodaSiamesa" = true ]
-   then
-      bash ./rodaSiamesa.sh $run
-   fi
+   bash ./roda.sh $run $rodaPadrao $rodaSiamesa
+  
    mkdir -p ${pastaDobrasResultados}/${Teste}
    mv ${pastaResultados}/* ${pastaDobrasResultados}/${Teste}   
     

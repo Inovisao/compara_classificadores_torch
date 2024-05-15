@@ -16,8 +16,17 @@ do
     do
         for k in "${opt[@]}"
         do
-            echo 'Running' ${lr} ' ' ${i} ' ' ${k} ' see results in folder ../results/'
-            python3 main.py -a $i -o $k -r $1 -l $lr > >(tee -a ../results/${i}_${k}_${lr}.output) 2> >(tee ../results/error_log_${i}_${k}_${lr}.txt >&2)
+            if [ "$2" = true ]
+            then
+                echo 'Running' ${lr} ' ' ${i} ' ' ${k} ' see results in folder ../results/'
+                python3 main.py -a $i -o $k -r $1 -l $lr > >(tee -a ../results/${i}_${k}_${lr}.output) 2> >(tee ../results/error_log_${i}_${k}_${lr}.txt >&2)
+            fi
+            if [ "$3" = true ]
+            then
+                echo 'Running' ${lr} ' siamese_' ${i} ' ' ${k} ' see results in folder ../results/'
+                python3 siamese_main.py -a $i -o $k -r $1 -l $lr > >(tee -a ../results/siamese_${i}_${k}_${lr}.output) 2> >(tee ../results/error_log_siamese_${i}_${k}_${lr}.txt >&2)
+            fi
+            
             echo 'Finished running' ${lr} ' ' ${i} ' ' ${k}
         done
     done
