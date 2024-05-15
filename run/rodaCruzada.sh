@@ -6,7 +6,7 @@
 export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
-ndobras=10  
+ndobras=5  
 rodaPadrao=true
 rodaSiamesa=false
 
