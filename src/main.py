@@ -90,50 +90,56 @@ def main():
     # Create a path to save the model.
     path_to_save = "../model_checkpoints/" + model_name + ".pth"
     
-    history = helper_functions.fit(train_dataloader=train_dataloader,
-                                   val_dataloader=val_dataloader,
-                                   model=model,
-                                   optimizer=optimizer,
-                                   loss_fn=loss_function,
-                                   epochs=MODEL_HYPERPARAMETERS["NUM_EPOCHS"],
-                                   patience=MODEL_HYPERPARAMETERS["PATIENCE"],
-                                   tolerance=MODEL_HYPERPARAMETERS["TOLERANCE"],
-                                   path_to_save=path_to_save)
-    
-    # Define the paths to save the history files.
-    path_to_history_csv = "../results/history/" + model_name + "_HISTORY.csv"
-    path_to_history_png = "../results/history/" + model_name + "_HISTORY.png"
+    # Check which procedure will be executed
+    procedure = args["procedure"]
 
-    # Save the history as csv.
-    history.to_csv(path_to_history_csv)
-    # Plot the history and save as png.
-    helper_functions.plot_history(history, path_to_history_png)
+    if procedure != "teste":
+        history = helper_functions.fit(train_dataloader=train_dataloader,
+                                    val_dataloader=val_dataloader,
+                                    model=model,
+                                    optimizer=optimizer,
+                                    loss_fn=loss_function,
+                                    epochs=MODEL_HYPERPARAMETERS["NUM_EPOCHS"],
+                                    patience=MODEL_HYPERPARAMETERS["PATIENCE"],
+                                    tolerance=MODEL_HYPERPARAMETERS["TOLERANCE"],
+                                    path_to_save=path_to_save)
+        
+        # Define the paths to save the history files.
+        path_to_history_csv = "../results/history/" + model_name + "_HISTORY.csv"
+        path_to_history_png = "../results/history/" + model_name + "_HISTORY.png"
+
+        # Save the history as csv.
+        history.to_csv(path_to_history_csv)
+        # Plot the history and save as png.
+        helper_functions.plot_history(history, path_to_history_png)
     
     # Load the best weights for testing.
     model.load_state_dict(torch.load(path_to_save))
+    model.to(device)
 
-    # Define the paths to save the confusion matrix files.
-    path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"    
-    path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
+    if procedure != "treino":
+        # Define the paths to save the confusion matrix files.
+        path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"    
+        path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
 
-    print("\n\nTesting the model...\n")
-    # Test, save the results and get precision, recall and fscore.
-    precision, recall, fscore = helper_functions.test(dataloader=test_dataloader,
-                                                      model=model, 
-                                                      path_to_save_matrix_csv=path_to_matrix_csv, 
-                                                      path_to_save_matrix_png=path_to_matrix_png,
-                                                      labels_map=DATA_HYPERPARAMETERS["CLASSES"])
+        print("\n\nTesting the model...\n")
+        # Test, save the results and get precision, recall and fscore.
+        precision, recall, fscore = helper_functions.test(dataloader=test_dataloader,
+                                                        model=model, 
+                                                        path_to_save_matrix_csv=path_to_matrix_csv, 
+                                                        path_to_save_matrix_png=path_to_matrix_png,
+                                                        labels_map=DATA_HYPERPARAMETERS["CLASSES"])
 
-    
-    # Create a string with run, learning rate, architecture,
-    # optimizer, precision, recall and fscore, to append to the csv file:
-    results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
+        
+        # Create a string with run, learning rate, architecture,
+        # optimizer, precision, recall and fscore, to append to the csv file:
+        results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
+            "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
 
-    # Open file, write and close.
-    f = open("../results_dl/results.csv", "a")
-    f.write(results)
-    f.close()
+        # Open file, write and close.
+        f = open("../results_dl/results.csv", "a")
+        f.write(results)
+        f.close()
 
     
     print("Explaining results...")
