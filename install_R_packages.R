@@ -8,7 +8,7 @@ install.packages("forcats")
 install.packages("ExpDes")
 install.packages("dplyr")
 install.packages("ExpDes.pt")
-install.packages("reshape")
+install.packages("reshape2")
 install.packages("data.table")
 install.packages("kableExtra")
 
