@@ -20,7 +20,7 @@ done
 
 
 for ((i=1;i<=$ndobras;i+=1)); do
-    weights_name="1_resnet18_sgd_0.001.pth"
+    weights_name="${i}_resnet18_sgd_0.001.pth"
     folds_name="fold_${i}"
     mkdir -p ./results
     mkdir -p ./results/results_gradcam_multilayer_resnet18/${folds_name}
