@@ -187,8 +187,6 @@ def generate_guided_backprop(model, model_name, test_dataloader, class_list, dev
             plot_attributions(original_img=original_img, positive=pos_attr, negative=neg_attr, label=labels[i], prediction=pred_indices[i], class_list=class_list, save_path=save_path, plot_original=False, attr_alpha=1.0)
 
 
-
-
 def generate_guided_gradcam(model, model_name, layer, test_dataloader, class_list, device):
     pass
 

@@ -137,6 +137,7 @@ def main():
 
     
     print("Explaining results...")
+    model.eval()
 
     # Generate explanations
     if ("gradcam" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
