@@ -137,53 +137,57 @@ def main():
     # Create a path to save the model.
     path_to_save = "../model_checkpoints/" + model_name + ".pth"
 
-    history = helper_functions.fit_siamese(train_dataloader_rec=train_dataloader_rec,
-                                   train_dataloader_cls=train_dataloader_cls,
-                                   val_dataloader=val_dataloader,
-                                   model=model,
-                                   optimizer_rec=optimizer_rec,
-                                   optimizer_cls=optimizer_cls,
-                                   loss_fn_rec=loss_function_recognition,
-                                   loss_fn_cls=loss_function_classification,
-                                   epochs=SIAMESE_MODEL_HYPERPARAMETERS["NUM_EPOCHS"],
-                                   patience=SIAMESE_MODEL_HYPERPARAMETERS["PATIENCE"],
-                                   tolerance=SIAMESE_MODEL_HYPERPARAMETERS["TOLERANCE"],
-                                   path_to_save=path_to_save)
+    # Check which procedure will be executed
+    procedure = args["procedure"]
+    
+    if procedure != "teste":
+        history = helper_functions.fit_siamese(train_dataloader_rec=train_dataloader_rec,
+                                    train_dataloader_cls=train_dataloader_cls,
+                                    val_dataloader=val_dataloader,
+                                    model=model,
+                                    optimizer_rec=optimizer_rec,
+                                    optimizer_cls=optimizer_cls,
+                                    loss_fn_rec=loss_function_recognition,
+                                    loss_fn_cls=loss_function_classification,
+                                    epochs=SIAMESE_MODEL_HYPERPARAMETERS["NUM_EPOCHS"],
+                                    patience=SIAMESE_MODEL_HYPERPARAMETERS["PATIENCE"],
+                                    tolerance=SIAMESE_MODEL_HYPERPARAMETERS["TOLERANCE"],
+                                    path_to_save=path_to_save)
 
-    # Define the paths to save the history files.
-    path_to_history_csv = "../results/history/" + model_name + "_HISTORY.csv"
-    path_to_history_png = "../results/history/" + model_name + "_HISTORY.png"
+        # Define the paths to save the history files.
+        path_to_history_csv = "../results/history/" + model_name + "_HISTORY.csv"
+        path_to_history_png = "../results/history/" + model_name + "_HISTORY.png"
 
-    # Save the history as csv.
+        # Save the history as csv.
+        history.to_csv(path_to_history_csv, sep =',')
+        # Plot the history and save as png.
+        helper_functions.plot_history_siamese(history, path_to_history_png)
 
     # Load the best weights for testing.
     model.load_state_dict(torch.load(path_to_save))
     model.to(device)
 
-    path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"
-    path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
+    if procedure != "treino":
+        path_to_matrix_csv = "../results/matrix/" + model_name + "_MATRIX.csv"
+        path_to_matrix_png = "../results/matrix/" + model_name + "_MATRIX.png"
 
-    # Test, save the results and get precision, recall and fscore.
-    precision, recall, fscore = helper_functions.test_siamese(test_dataloader=test_dataloader,
-                                                      model=model,
-                                                      path_to_save_matrix_csv=path_to_matrix_csv,
-                                                      path_to_save_matrix_png=path_to_matrix_png,
-                                                      labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"])
+        # Test, save the results and get precision, recall and fscore.
+        precision, recall, fscore = helper_functions.test_siamese(test_dataloader=test_dataloader,
+                                                        model=model,
+                                                        path_to_save_matrix_csv=path_to_matrix_csv,
+                                                        path_to_save_matrix_png=path_to_matrix_png,
+                                                        labels_map=SIAMESE_DATA_HYPERPARAMETERS["CLASSES"])
 
 
-    # Create a string with run, learning rate, architecture,
-    # optimizer, precision, recall and fscore, to append to the csv file:
-    results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + "siamese_" + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
+        # Create a string with run, learning rate, architecture,
+        # optimizer, precision, recall and fscore, to append to the csv file:
+        results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + "siamese_" + str(args["architecture"]) + \
+            "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
 
-    history.to_csv(path_to_history_csv, sep =',')
-    # history = pd.read_csv(history, delimiter=',')
-    # Plot the history and save as png.
-    helper_functions.plot_history_siamese(history, path_to_history_png)
-    # Open file, write and close.
-    f = open("../results_dl/results.csv", "a")
-    f.write(results)
-    f.close()
+        # Open file, write and close.
+        f = open("../results_dl/results.csv", "a")
+        f.write(results)
+        f.close()
 
 # Call the main function.
 if __name__ == "__main__":
