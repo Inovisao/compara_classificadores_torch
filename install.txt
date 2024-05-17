@@ -7,7 +7,7 @@ conda create --yes --name cla_torch
 conda activate cla_torch
 conda install --yes pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install --yes scikit-learn pandas numpy 
-pip install --no-input ml_collections timm tifffile opencv-python-headless wget torchmetrics matplotlib seaborn captum
+pip install --no-input ml_collections timm tifffile opencv-python-headless wget torchmetrics matplotlib seaborn captum shap
 
 # Para instalar as dependência dos códigos em R
 sudo apt install libfontconfig1-dev
