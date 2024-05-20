@@ -11,14 +11,21 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 import random
 
+# Além de igualar com a classe majoritária, é possível
+# aumentar todas as classes. No exempo, estamos usando
+# 1 para aumentar todas as classes em 100%.
+# Troque por 0 para apenas balancear sem aumentar
+# o total da classe majoritária
+percentual_aumento = 1
+
 def aumentar_dados(pasta,pasta_aumentada,fold):
     # Transformações para aumentar os dados
     transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(30),
-        transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+#        transforms.RandomVerticalFlip(),
+#        transforms.RandomRotation(30),
+#        transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
         transforms.ToTensor()
     ])
 
@@ -46,6 +53,8 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
     # para igualar a quantidade da maior classe
     fator_por_classe = [max(n_imgs) - n for n in n_imgs]
 
+    novas_imagens = int(max(n_imgs) * percentual_aumento)
+
     # Contador que será usado nos nomes dos arquivos
     n_imgs_aumentadas = [0] * n_classes
 
@@ -70,7 +79,7 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
 
     # Aumentar as imagens
     for label in range(n_classes):
-        for i in range(fator_por_classe[label]):
+        for i in range(fator_por_classe[label]+novas_imagens):
             img, teste = get_random_image(label)
             # Transform to PIL image
             img = img.squeeze(0)
