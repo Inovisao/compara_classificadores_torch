@@ -16,13 +16,15 @@ import random
 # 1 para aumentar todas as classes em 100%.
 # Troque por 0 para apenas balancear sem aumentar
 # o total da classe majoritária
-percentual_aumento = 1
+percentual_aumento = 0
 
 def aumentar_dados(pasta,pasta_aumentada,fold):
+
+    print('Balanceando dobra ' + str(fold) + '...')
     # Transformações para aumentar os dados
     transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
-#        transforms.RandomVerticalFlip(),
+        transforms.RandomVerticalFlip(),
 #        transforms.RandomRotation(30),
 #        transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
         transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
@@ -79,6 +81,7 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
 
     # Aumentar as imagens
     for label in range(n_classes):
+        print('   Aumentando classe ' + str(label) + '...')
         for i in range(fator_por_classe[label]+novas_imagens):
             img, teste = get_random_image(label)
             # Transform to PIL image
