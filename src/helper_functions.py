@@ -14,6 +14,7 @@ from torchmetrics import Recall, Precision, F1Score
 from torch.nn.functional import softmax
 from torchvision import transforms
 from data_manager import get_transforms
+import PIL.Image as Image
 
 device = MODEL_HYPERPARAMETERS["DEVICE"]
 
@@ -540,7 +541,12 @@ def save_confused_image(path_to_save_matrix_csv, image, image_file_name, label, 
     path_to_save_image = os.path.join(path_to_prediction, image_file_name)
 
     image = image.cpu().numpy().transpose((1, 2, 0))
-    plt.imsave(path_to_save_image, image)
+
+    image = Image.fromarray((image * 255).astype(np.uint8))
+    image.save(path_to_save_image)
+
+
+
 
 
 
