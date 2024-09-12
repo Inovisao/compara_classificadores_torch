@@ -22,7 +22,7 @@
 
 ## Informações adicionais.
 
-- Os resultados relativos à dobra em execução são colocados na pasta ./results. Os resultados por dobra são colocados na pasta ./resultsNfolds após a execução completa da dobra.
+- Os resultados relativos à dobra em execução são colocados na pasta ./results. Os resultados por dobra são colocados na pasta ./resultsNfolds após a execução completa da dobra e os resultados finais (estatísticas, boxplots,etc) são colocados na pasta ./results_dl
 
 ## Troubleshooting.
 
