@@ -8,10 +8,10 @@ export CUDA_VISIBLE_DEVICES=0
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
 ndobras=5  
 rodaPadrao=true
-rodaSiamesa=true
+rodaSiamesa=false
 
 # "treino" para apenas treinar, "teste" para apenas testar ou "completo" para executar ambos
-procedimento="completo"
+procedimento="teste"
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)

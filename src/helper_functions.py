@@ -44,6 +44,9 @@ def get_args():
     # Parse the learning rate.
     arg_parser.add_argument("-p", "--procedure", required=True, default="completo", type=str)
 
+    # Parse the explainer to be used.
+    arg_parser.add_argument("-e", "--explainer", required=False, default=None, type=str)
+
     # Parse the arguments and return them as a dictionary.
     return vars(arg_parser.parse_args())
 

@@ -11,7 +11,7 @@ rodaPadrao=true
 rodaSiamesa=true
 
 # "treino" para apenas treinar, "teste" para apenas testar ou "completo" para executar ambos
-procedimento="completo"
+procedimento="teste"
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)

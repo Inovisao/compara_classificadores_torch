@@ -5,11 +5,13 @@
     This is the main file of the program.
     
 """
-from arch_optim import architectures, optimizers, gradcam_layer_getters, get_architecture, get_optimizer
+#from arch_optim import architectures, optimizers, gradcam_layer_getters, get_architecture, get_optimizer
+from architectures import get_architecture
+from optimizers import get_optimizer
 import data_manager
-import explainers
 import helper_functions
 from hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
+
 
 import os
 import torch
@@ -33,16 +35,16 @@ def main():
     # Get CLI arguments.
     args = helper_functions.get_args()
     
-    # Assert that the optimizer exists in the list above.
-    assert args["optimizer"].casefold() in optimizers, \
-        "Optimizer not recognized. Maybe it hasn't been implemented yet."
+    ## Assert that the optimizer exists in the list above.
+    #assert args["optimizer"].casefold() in optimizers, \
+    #    "Optimizer not recognized. Maybe it hasn't been implemented yet."
 
-    # Assert that the architecture exists in the list above.
-    assert args["architecture"].casefold() in architectures, \
-        "Architecture not recognized. Maybe it hasn't been implemented yet."
+    ## Assert that the architecture exists in the list above.
+    #assert args["architecture"].casefold() in architectures, \
+    #    "Architecture not recognized. Maybe it hasn't been implemented yet."
 
-    assert args["architecture"].casefold() in gradcam_layer_getters, \
-        "No function to get the target layer for the GradCAM found."
+    #assert args["architecture"].casefold() in gradcam_layer_getters, \
+    #    "No function to get the target layer for the GradCAM found."
 
     # Get the model.
     model = get_architecture(args["architecture"], 
@@ -140,74 +142,6 @@ def main():
         f = open("../results_dl/results.csv", "a")
         f.write(results)
         f.close()
-
-    
-    print("Explaining results...")
-    model.eval()
-
-    # Generate explanations
-    if ("gradcam" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        try:
-            gradcam_layer = gradcam_layer_getters[args["architecture"]](model)
-            if gradcam_layer is None:
-                print("GradCAM is not available for this model.")
-            else:
-                print("Generating GradCAM explanations...")
-                if not os.path.exists("../results/gradcam"):
-                    os.makedirs("../results/gradcam")
-        
-                if not os.path.exists(f"../results/gradcam/{model_name}"):
-                    os.makedirs(f"../results/gradcam/{model_name}")
-
-                explainers.generate_gradcam(model, model_name, gradcam_layer, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
-        except Exception as e:
-            print("GradCAM went wrong")
-            print(e)
-
-
-    if ("occlusion" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        try:
-            print("Generating Occlusion explanations...")
-            if not os.path.exists("../results/occlusion"):
-                os.makedirs("../results/occlusion")
-        
-            if not os.path.exists(f"../results/occlusion/{model_name}"):
-                os.makedirs(f"../results/occlusion/{model_name}")
-
-            explainers.generate_occlusion(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
-        except Exception as e:
-            print("Occlusion went wrong")
-            print(e)        
-
-
-    if ("guided_backprop" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        try:
-            print("Generating Guided BackProp explanations...")
-            if not os.path.exists("../results/guided_backprop"):
-                os.makedirs("../results/guided_backprop")
-        
-            if not os.path.exists(f"../results/guided_backprop/{model_name}"):
-                os.makedirs(f"../results/guided_backprop/{model_name}")
-
-            explainers.generate_guided_backprop(model, model_name, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
-        except Exception as e:
-            print("Guided BackProp went wrong")
-            print(e)
-    
-    if ("shap" in MODEL_HYPERPARAMETERS["EXPLAINERS"]):
-        try:
-            print("Generating SHAP explanations...")
-            if not os.path.exists("../results/shap"):
-                os.makedirs("../results/shap")
-        
-            if not os.path.exists(f"../results/shap/{model_name}"):
-                os.makedirs(f"../results/shap/{model_name}")
-
-            explainers.generate_shap(model, model_name, train_dataloader, test_dataloader, DATA_HYPERPARAMETERS["CLASSES"], device)
-        except Exception as e:
-            print("SHAP went wrong")
-            print(e)
-
 
     print("\nFinished execution.")
 
