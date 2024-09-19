@@ -3,8 +3,42 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool
 import numpy as np
 import os
+import pandas as pd
 import torch
 from torch import nn
+
+        
+def append_label_pred_to_filename(filename: str, 
+                                  label: int|str, 
+                                  prediction: int|str, 
+                                  classes: list[str]=None) -> str:
+    if classes is not None:
+        label = classes[label]
+        prediction = classes[prediction]
+
+    label_pred_filename = str(f"is_{label}_pred_as_{prediction}_") + filename.split("/")[-1]
+
+    return label_pred_filename
+            
+
+def min_max_normalization(x: torch.tensor) -> torch.tensor:
+    x_min = x.min()
+    x_max = x.max()
+
+    x_normalized = (x - x_min) / (x_max - x_min)
+
+    return x_normalized
+
+
+def save_results(results: dict, save_dir_path: str) -> None:
+    df = pd.DataFrame(results)
+    if os.path.exists(save_dir_path):
+        # Lê o arquivo CSV e adiciona os novos resultados.
+        old_df = pd.read_csv(save_dir_path)
+        df = pd.concat([old_df, df], axis=0)
+    
+    df.to_csv(save_dir_path, index=False)
+
 
 class FeatureImportancePlot():
     def __init__(self, 
@@ -47,7 +81,7 @@ class FeatureImportancePlot():
         # Seleciona a imagem e a atribuição. Normaliza e redimensiona a atribuição.
         img = self.images[idx]
         attr = self.attributions[idx]
-        attr = (attr - attr.min()) / (attr.max() - attr.min())
+        attr = min_max_normalization(attr)
         attr = cv2.resize(attr, (img.shape[1], img.shape[0]))
 
         save_path = os.path.join(self.save_dir_path, self.filenames[idx] + ".png")
@@ -83,17 +117,3 @@ class FeatureImportancePlot():
         pool = Pool()
         pool.map(self.plot_one, range(self.images.shape[0]))
 
-        
-def append_label_pred_to_filename(filename: str, 
-                                  label: int|str, 
-                                  prediction: int|str, 
-                                  classes: list[str]=None) -> str:
-    if classes is not None:
-        label = classes[label]
-        prediction = classes[prediction]
-
-    label_pred_filename = str(f"is_{label}_pred_as_{prediction}_") + filename.split("/")[-1]
-
-    return label_pred_filename
-            
-        

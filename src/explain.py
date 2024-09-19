@@ -51,6 +51,10 @@ model.eval()
 
 if args["explainer"] == "gradcam":
     target_layer = layer_selection(args["architecture"], model)
+    attr_post_processing_function = None
+    if type(target_layer) == tuple:
+        target_layer, attr_post_processing_function = target_layer
+
     if target_layer is None:
         sys.exit("No function to get the target layer for the GradCAM found.")
     
@@ -62,15 +66,23 @@ if args["explainer"] == "gradcam":
                               target_layer=target_layer, 
                               dataloader=test_dataloader, 
                               classes=DATA_HYPERPARAMETERS["CLASSES"],
-                              save_dir_path=f"../results/gradcam_{model_name}",)
+                              save_dir_path=f"../results/gradcam_{model_name}",
+                              args=args,
+                              attr_post_processing_function=attr_post_processing_function)
             gradcam.explain()
+            gradcam.evaluate()
             break
         except Exception as e:
             if "CUDA out of memory" in str(e):
+                new_batch_size = test_dataloader.batch_size // 2
+                if new_batch_size <= 0:
+                    raise e
+
                 test_dataloader = DataLoader(test_dataloader.dataset, 
-                                             batch_size=test_dataloader.batch_size // 2, 
+                                             batch_size=new_batch_size, 
                                              shuffle=False,
                                              num_workers=test_dataloader.num_workers)
+                torch.cuda.empty_cache()
             else:
                 raise e
                 
