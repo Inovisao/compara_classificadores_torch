@@ -1,4 +1,6 @@
 # Ordena o arquivo ../results_dl/results.csv pelo valor da medida-F
+# Vai gerar o arquivo ../results_dl/results_ordered.csv e também
+# mostrar na tela os 10 primeiros do ranking
 
 # Extrai o cabeçalho
 echo "Dobra,LR,Otim,Arquit,F-Score" > ../results_dl/results_ordered.csv
