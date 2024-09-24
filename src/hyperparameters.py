@@ -13,7 +13,7 @@ NUM_CLASSES = len(CLASSES)
 # Hyperparameters pertaining to the data to be passed into the model.
 DATA_HYPERPARAMETERS = {
     "IMAGE_SIZE": 256,
-    "BATCH_SIZE": 32,
+    "BATCH_SIZE": 4,
     "VAL_SPLIT": 0.2,
     "USE_DATA_AUGMENTATION": False,
     "DATA_SCALE_FACTOR": 1, # This divides the data when it is read; useful for scaling (e.g., to [0, 1]) 

@@ -14,28 +14,52 @@ class GradCAM():
                  target_layer: nn.Module,
                  dataloader: DataLoader,
                  save_dir_path: str,
-                 args: dict,
+                 full_results_path: str=None,
+                 fold: int=1,
+                 architecture: str=None,
+                 optimizer: str=None,
+                 learning_rate: str|float=None,
                  target_class: str|int="prediction",
+                 plot_type: str="overlay",
                  classes: list[str]=None,
                  device: str=None,
                  attr_post_processing_function: Callable[[torch.tensor], torch.tensor]=None):
-
+        # Inicializa os atributos que não precisam de processamento.
         self.model = model
         self.target_layer = target_layer
         self.dataloader = dataloader
         self.save_dir_path = save_dir_path
-        self.args = args
+        self.full_results_path = full_results_path
+        self.fold = fold
+        self.architecture = architecture
+        self.optimizer = optimizer
+        self.learning_rate = learning_rate
         self.target_class = target_class
+        self.plot_type = plot_type
         self.classes = classes
         self.attr_post_processing_function = attr_post_processing_function
 
+        # Inicializa atributos que precisam de processamento ou validação
         self.device = device
         if device is None:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
+
+        # Deve ter um jeito mais inteligente de fazer isto...
+        if self.architecture is None or self.optimizer is None or self.learning_rate is None:
+            if self.architecture or self.optimizer or self.learning_rate:
+                raise ValueError("If you pass any of the model's hyperparameters, you must pass all of them.")
+
+        self.model_name = None
+        if self.architecture is not None:
+            self.model_name = f"{self.fold}_{self.architecture}_{self.optimizer}_{self.learning_rate}"
+        
+        # Cria o diretório para salvar as imagens.
+        os.makedirs(os.path.join(self.save_dir_path, f"gradcam_{self.model_name}"), exist_ok=True)
+        
+        # Ajusta o modelo e o explainer.
         self.model.eval()
         self.model.to(self.device)
-
         self.explainer = LayerGradCam(self.model, self.target_layer)
 
 
@@ -71,8 +95,8 @@ class GradCAM():
             plotter = FeatureImportancePlot(images=images, 
                                             attributions=attributions, 
                                             filenames=filenames, 
-                                            plot_type="overlay", 
-                                            save_dir_path=self.save_dir_path)
+                                            plot_type=self.plot_type, 
+                                            save_dir_path=os.path.join(self.save_dir_path, f"gradcam_{self.model_name}"))
 
             plotter.plot_all()
     
@@ -83,12 +107,14 @@ class GradCAM():
             "learning_rate": [],
             "architecture": [],
             "optimizer": [],
+            "all_outputs": [],
             "predictions": [],
             "prediction_logits": [],
             "prediction_probabilities": [],
             "labels": [],
             "filenames": [],
             "gradcam_predictions": [],
+            "gradcam_all_outputs": [],
             "gradcam_prediction_logits": [],
             "gradcam_prediction_probabilities": [],
         }
@@ -107,6 +133,7 @@ class GradCAM():
                 predictions_idx = torch.argmax(predictions, dim=1).tolist()
 
             # Guarda informações das previsões referentes às imagens originais.
+            results["all_outputs"].extend(predictions.tolist())
             results["predictions"].extend(predictions_idx)
             results["prediction_logits"].extend([predictions[i, predictions_idx[i]].item() for i in range(len(predictions_idx))])
             results["prediction_probabilities"].extend([predictions_probabilities[i, predictions_idx[i]].item() for i in range(len(predictions_idx))])
@@ -132,17 +159,18 @@ class GradCAM():
             predictions_idx = torch.argmax(predictions, dim=1).tolist()
 
             # Guarda informações das previsões referentes às imagens com GradCAM.
+            results["gradcam_all_outputs"].extend(predictions.tolist())
             results["gradcam_predictions"].extend(predictions_idx)
             results["gradcam_prediction_logits"].extend([predictions[i, predictions_idx[i]].item() for i in range(len(predictions_idx))])
             results["gradcam_prediction_probabilities"].extend([predictions_probabilities[i, predictions_idx[i]].item() for i in range(len(predictions_idx))])
 
-        results["fold"] = [self.args["run"]] * len(results["predictions"])
-        results["learning_rate"] = [self.args["learning_rate"]] * len(results["predictions"])
-        results["architecture"] = [self.args["architecture"]] * len(results["predictions"])
-        results["optimizer"] = [self.args["optimizer"]] * len(results["predictions"])
+        results["fold"] = [self.fold] * len(results["predictions"])
+        results["learning_rate"] = [self.learning_rate] * len(results["predictions"])
+        results["architecture"] = [self.architecture] * len(results["predictions"])
+        results["optimizer"] = [self.optimizer] * len(results["predictions"])
 
         # Salva os resultados.
-        save_results(results, "../results/gradcam_results.csv")
+        save_results(results, os.path.join(self.save_dir_path, "gradcam_results.csv"))
 
         # Calcula novas métricas com base nos resultados após a aplicação do GradCAM.
         precision, recall, fscore, _ = metrics.precision_recall_fscore_support(results["labels"], results["predictions"], average="macro", zero_division=0.0)
@@ -153,11 +181,11 @@ class GradCAM():
         recall_diff = np.abs(recall - gradcam_recall)
         fscore_diff = np.abs(fscore - gradcam_fscore)
 
-        results = {
-            "fold": self.args["run"],
-            "learning_rate": self.args["learning_rate"],
-            "architecture": self.args["architecture"],
-            "optimizer": self.args["optimizer"],
+        eval_results = {
+            "fold": self.fold,
+            "learning_rate": self.learning_rate,
+            "architecture": self.architecture,
+            "optimizer": self.optimizer,
             "precision": precision,
             "recall": recall,
             "fscore": fscore,
@@ -168,17 +196,24 @@ class GradCAM():
             "recall_diff": recall_diff,
             "fscore_diff": fscore_diff
         }
-        results = {k: [v] for k, v in results.items()}
+        eval_results = {k: [v] for k, v in eval_results.items()}
 
-        save_results(results, save_dir_path="../results_dl/gradcam_metrics.csv")
+        save_results(eval_results, save_dir_path=self.full_results_path)
 
+        pr_results = EvaluationCurves(labels=np.array(results["labels"]), 
+                                      predictions=np.array(results["all_outputs"]), 
+                                      from_logits=True,
+                                      save_path=os.path.join(self.save_dir_path, self.model_name)).precision_recall(return_results=True)
 
+        pr_gc_results = EvaluationCurves(labels=np.array(results["labels"]),
+                                         predictions=np.array(results["gradcam_all_outputs"]),
+                                         from_logits=True,
+                                         save_path=os.path.join(self.save_dir_path, self.model_name + "_gradcam")).precision_recall(return_results=True)
+        
+        pr_results = recursive_ndarray_tolist_conversion(pr_results)
+        pr_gc_results = recursive_ndarray_tolist_conversion(pr_gc_results)
 
-
-
-
-
-
-
+        save_json(pr_results, os.path.join(self.save_dir_path, self.model_name + "_pr_results.json"))
+        save_json(pr_gc_results, os.path.join(self.save_dir_path, self.model_name + "_gradcam_pr_results.json"))
 
 

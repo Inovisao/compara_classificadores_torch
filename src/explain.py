@@ -66,14 +66,23 @@ if args["explainer"] == "gradcam":
                               target_layer=target_layer, 
                               dataloader=test_dataloader, 
                               classes=DATA_HYPERPARAMETERS["CLASSES"],
-                              save_dir_path=f"../results/gradcam_{model_name}",
-                              args=args,
+                              save_dir_path=os.path.join("..", "results"),
+                              full_results_path=os.path.join("..", "results_dl", "gradcam_metrics.csv"),
+                              fold=args["run"],
+                              architecture=args["architecture"],
+                              optimizer=args["optimizer"],
+                              learning_rate=args["learning_rate"],
+                              plot_type="hadamard",
                               attr_post_processing_function=attr_post_processing_function)
+            print("Plotting GradCAM feature importance maps...")
             gradcam.explain()
+            print("GradCAM feature importance maps plotted.")
+            print("Evaluating GradCAM feature importance maps...")
             gradcam.evaluate()
             break
         except Exception as e:
             if "CUDA out of memory" in str(e):
+                print("CUDA out of memory error. Trying to reduce the batch size.")
                 new_batch_size = test_dataloader.batch_size // 2
                 if new_batch_size <= 0:
                     raise e
@@ -86,14 +95,3 @@ if args["explainer"] == "gradcam":
             else:
                 raise e
                 
-
-
-
-
-
-
-
-
-
-
-
