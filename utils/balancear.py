@@ -89,7 +89,7 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
 
     # Aumentar as imagens
     for label in range(n_classes):
-        print('   Aumentando classe ' + str(label) + '...')
+        print('   Aumentando classe ' + classes[label] + '...')
         for i in range(fator_por_classe[label]+novas_imagens):
             img, teste = get_random_image(label)
             # Transform to PIL image
@@ -110,6 +110,7 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
 
             img.save(pasta_da_classe + '/' + 'SINTETICA_F'+str(fold)+'_'+str(n_imgs_aumentadas[label]) + '.jpg')
             n_imgs_aumentadas[label] += 1
+        print('   Criou mais ' + str(fator_por_classe[label]+novas_imagens) + ' imagens para esta classe')
 
 
 
