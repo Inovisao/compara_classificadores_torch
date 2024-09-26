@@ -18,6 +18,14 @@ import random
 # o total da classe majoritária
 percentual_aumento = 0
 
+# Verifica se passado um parâmetro -p n para aumentar todas as classes
+# e usa o valor de n como percentual de aumento
+import sys
+if len(sys.argv) > 1:
+    if sys.argv[1] == '-p':
+        percentual_aumento = int(sys.argv[2])/100
+
+
 def aumentar_dados(pasta,pasta_aumentada,fold):
 
     print('Balanceando dobra ' + str(fold) + '...')
