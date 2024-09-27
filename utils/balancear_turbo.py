@@ -6,7 +6,6 @@
 import numpy as np
 import imgaug as ia
 import imgaug.augmenters as iaa
-import cv2
 import os
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
@@ -174,6 +173,10 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
     for label in range(n_classes):
         print('   Aumentando classe ' + classes[label] + '...')
         for i in range(fator_por_classe[label]+novas_imagens):
+
+            # ESTE É O TRECHO BUGADO ... TEM QUE VER COMO FAZER AS CONVERSÕES CORRETAS
+            # PARA PODER USAR O seq E SALVAR AS IMAGENS
+
             img, teste = get_random_image(label)
 
             img = seq(images=[img.numpy()])[0]
@@ -191,7 +194,9 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
                 os.makedirs(pasta_da_classe)
 
             img.save(pasta_da_classe + '/' + 'SINTETICA_F'+str(fold)+'_'+str(n_imgs_aumentadas[label]) + '.jpg')
+
             n_imgs_aumentadas[label] += 1
+
         print('   Criou mais ' + str(fator_por_classe[label]+novas_imagens) + ' imagens para esta classe')
 
 
