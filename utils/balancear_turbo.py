@@ -1,3 +1,8 @@
+# TÁ BUGADO !!! TÁ BUGADO !!!
+# Tem uns problemas de conversão para poder usar o "seq" e depois salvar
+# Também tem que fazer downgrade do python para 3.5 por conta de um erro no "imgaug"
+# O ideal é tentar arrumar o imgaug para funcionar com versão mais novas do python e numpy
+
 import numpy as np
 import imgaug as ia
 import imgaug.augmenters as iaa
@@ -172,6 +177,12 @@ def aumentar_dados(pasta,pasta_aumentada,fold):
             img, teste = get_random_image(label)
 
             img = seq(images=[img.numpy()])[0]
+
+            # Converte para uint8
+            img = img.astype(np.uint8)
+
+            # Convertendo a imagem para o formato PIL
+            img = transforms.ToPILImage()(img)
 
             pasta_da_classe = pasta_aumentada + '/' + classes[label]
 
