@@ -2,6 +2,11 @@
 # Tem uns problemas de conversão para poder usar o "seq" e depois salvar
 # Também tem que fazer downgrade do python para 3.5 por conta de um erro no "imgaug"
 # O ideal é tentar arrumar o imgaug para funcionar com versão mais novas do python e numpy
+#
+# Site do imgaug: https://github.com/aleju/imgaug
+#
+# Dá para instalar com o pip install imgaug, mas tem que ser em um ambiente conda com o python 3.5
+
 
 import numpy as np
 import imgaug as ia
