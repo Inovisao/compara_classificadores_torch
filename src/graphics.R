@@ -114,129 +114,6 @@ for (lr in unique(data$learning_rate)) {
 
 
 ###########################################################
-# Apply anova and skott-knott test.
-###########################################################
-
-# Verify which variables (out of architecture, optimizer and learning rate)
-# have at least two values.
-possible_factors <- list("architecture", "optimizer", "learning_rate")
-factors <- list()
-i <- 1
-for (possible_factor in possible_factors) {
-  if (length(unique(data[, possible_factor])) > 1) {
-    factors[i] <- possible_factor
-    i <- i + 1
-  }
-}
-
-one_way_anova <- function(dataframe, factors) {
-  # Applies one-way ANOVA and Tukey's HSD test to the factor in the list for each metric.
-  # The response variables are precision, recall, and fscore.
-  sink("../results_dl/one_way.txt")
-  
-  factor_name <- sprintf("%s", factors[1])
-  
-  # One-way ANOVA and Tukey's HSD test for precision
-  cat(sprintf('\n\n====>>> TESTING: PRECISION for %s =============== \n\n', factor_name))
-  aov_result_precision <- aov(precision ~ ., data = subset(dataframe, select = c(factor_name, "precision")))
-  print(summary(aov_result_precision))
-  cat("\n\n====>>> Tukey's HSD TEST for PRECISION =============== \n\n")
-  tukey_precision <- TukeyHSD(aov_result_precision)
-  print(tukey_precision)
-  
-  # One-way ANOVA and Tukey's HSD test for recall
-  cat(sprintf('\n\n====>>> TESTING: RECALL for %s =============== \n\n', factor_name))
-  aov_result_recall <- aov(recall ~ ., data = subset(dataframe, select = c(factor_name, "recall")))
-  print(summary(aov_result_recall))
-  cat("\n\n====>>> Tukey's HSD TEST for RECALL =============== \n\n")
-  tukey_recall <- TukeyHSD(aov_result_recall)
-  print(tukey_recall)
-  
-  # One-way ANOVA and Tukey's HSD test for fscore
-  cat(sprintf('\n\n====>>> TESTING: FSCORE for %s =============== \n\n', factor_name))
-  aov_result_fscore <- aov(fscore ~ ., data = subset(dataframe, select = c(factor_name, "fscore")))
-  print(summary(aov_result_fscore))
-  cat("\n\n====>>> Tukey's HSD TEST for FSCORE =============== \n\n")
-  tukey_fscore <- TukeyHSD(aov_result_fscore)
-  print(tukey_fscore)
-  
-  sink()
-}
-
-two_way_anova <- function(dataframe, factors) {
-  # Applies two way anova to any two factors given in a list.
-  # The response variables are precision, recall and fscore.
-  sink("../results_dl/two_way.txt")    
-  
-  cat(sprintf('\n\n====>>> TESTING: PRECISION =============== \n\n'))
-  fat2.dic(dataframe[, sprintf("%s", factors[1])], 
-           dataframe[, sprintf("%s", factors[2])], 
-           dataframe$precision, 
-           quali=c(TRUE, TRUE),
-           mcomp="sk")
-  
-  cat(sprintf('\n\n====>>> TESTING: RECALL =============== \n\n'))
-  fat2.dic(dataframe[, sprintf("%s", factors[1])], 
-           dataframe[, sprintf("%s", factors[2])], 
-           dataframe$recall, 
-           quali=c(TRUE, TRUE),
-           mcomp="sk") 
-  
-  cat(sprintf('\n\n====>>> TESTING: FSCORE =============== \n\n'))
-  fat2.dic(dataframe[, sprintf("%s", factors[1])], 
-           dataframe[, sprintf("%s", factors[2])], 
-           dataframe$fscore, 
-           quali=c(TRUE, TRUE),
-           mcomp="sk")
-  
-  sink()
-}
-
-three_way_anova <- function(dataframe, factors) {
-  # Applies three way anova to any three factors given in a list.
-  # The response variables are precision, recall and fscore. 
-  
-  sink("../results_dl/three_way.txt")
-  
-  cat(sprintf('\n\n====>>> TESTING: PRECISION =============== \n\n'))
-  fat3.dic(dataframe[, sprintf("%s", factors[1])], 
-           dataframe[, sprintf("%s", factors[2])], 
-           dataframe[, sprintf("%s", factors[3])], 
-           dataframe$precision, 
-           quali=c(TRUE, TRUE, TRUE), 
-           mcomp="sk") 
-  
-  cat(sprintf('\n\n====>>> TESTING: RECALL ================= \n\n'))
-  fat3.dic(dataframe[, sprintf("%s", factors[1])], 
-           dataframe[, sprintf("%s", factors[2])], 
-           dataframe[, sprintf("%s", factors[3])], 
-           dataframe$recall, 
-           quali=c(TRUE, TRUE, TRUE), 
-           mcomp="sk") 
-  
-  cat(sprintf('\n\n====>>> TESTING: FSCORE ================= \n\n'))
-  fat3.dic(dataframe[, sprintf("%s", factors[1])], 
-           dataframe[, sprintf("%s", factors[2])], 
-           dataframe[, sprintf("%s", factors[3])], 
-           dataframe$fscore, 
-           quali=c(TRUE, TRUE, TRUE), 
-           mcomp="sk") 
-  
-  sink()
-}
-
-# Apply anova according to the number of factors.
-if (length(factors) == 1){
-  one_way_anova(data, factors)
-} else if (length(factors) == 2) {
-  two_way_anova(data, factors)
-} else if (length(factors) == 3) {
-  three_way_anova(data, factors)
-} else {
-  print("Incorrect number of factors. Anova could not be applied.")
-}
-
-###########################################################
 # Get some statistics.
 ###########################################################
 
@@ -387,4 +264,130 @@ for (metric in metrics) {
   ggsave(paste('../results_dl/matrices_for_best_', metric, "/", best$architecture, "_", best$optimizer, "_", best$learning_rate, '_MEAN_cm.png', sep=""), g, scale=1, width=6, height=5)
   print(g)
 }
+
+
+
+###########################################################
+# Apply anova and skott-knott test.
+###########################################################
+
+# Verify which variables (out of architecture, optimizer and learning rate)
+# have at least two values.
+possible_factors <- list("architecture", "optimizer", "learning_rate")
+factors <- list()
+i <- 1
+for (possible_factor in possible_factors) {
+  if (length(unique(data[, possible_factor])) > 1) {
+    factors[i] <- possible_factor
+    i <- i + 1
+  }
+}
+
+one_way_anova <- function(dataframe, factors) {
+  # Applies one-way ANOVA and Tukey's HSD test to the factor in the list for each metric.
+  # The response variables are precision, recall, and fscore.
+  sink("../results_dl/one_way.txt")
+  
+  factor_name <- sprintf("%s", factors[1])
+  
+  # One-way ANOVA and Tukey's HSD test for precision
+  cat(sprintf('\n\n====>>> TESTING: PRECISION for %s =============== \n\n', factor_name))
+  aov_result_precision <- aov(precision ~ ., data = subset(dataframe, select = c(factor_name, "precision")))
+  print(summary(aov_result_precision))
+  cat("\n\n====>>> Tukey's HSD TEST for PRECISION =============== \n\n")
+  tukey_precision <- TukeyHSD(aov_result_precision)
+  print(tukey_precision)
+  
+  # One-way ANOVA and Tukey's HSD test for recall
+  cat(sprintf('\n\n====>>> TESTING: RECALL for %s =============== \n\n', factor_name))
+  aov_result_recall <- aov(recall ~ ., data = subset(dataframe, select = c(factor_name, "recall")))
+  print(summary(aov_result_recall))
+  cat("\n\n====>>> Tukey's HSD TEST for RECALL =============== \n\n")
+  tukey_recall <- TukeyHSD(aov_result_recall)
+  print(tukey_recall)
+  
+  # One-way ANOVA and Tukey's HSD test for fscore
+  cat(sprintf('\n\n====>>> TESTING: FSCORE for %s =============== \n\n', factor_name))
+  aov_result_fscore <- aov(fscore ~ ., data = subset(dataframe, select = c(factor_name, "fscore")))
+  print(summary(aov_result_fscore))
+  cat("\n\n====>>> Tukey's HSD TEST for FSCORE =============== \n\n")
+  tukey_fscore <- TukeyHSD(aov_result_fscore)
+  print(tukey_fscore)
+  
+  sink()
+}
+
+two_way_anova <- function(dataframe, factors) {
+  # Applies two way anova to any two factors given in a list.
+  # The response variables are precision, recall and fscore.
+  sink("../results_dl/two_way.txt")    
+  
+  cat(sprintf('\n\n====>>> TESTING: PRECISION =============== \n\n'))
+  fat2.dic(dataframe[, sprintf("%s", factors[1])], 
+           dataframe[, sprintf("%s", factors[2])], 
+           dataframe$precision, 
+           quali=c(TRUE, TRUE),
+           mcomp="sk")
+  
+  cat(sprintf('\n\n====>>> TESTING: RECALL =============== \n\n'))
+  fat2.dic(dataframe[, sprintf("%s", factors[1])], 
+           dataframe[, sprintf("%s", factors[2])], 
+           dataframe$recall, 
+           quali=c(TRUE, TRUE),
+           mcomp="sk") 
+  
+  cat(sprintf('\n\n====>>> TESTING: FSCORE =============== \n\n'))
+  fat2.dic(dataframe[, sprintf("%s", factors[1])], 
+           dataframe[, sprintf("%s", factors[2])], 
+           dataframe$fscore, 
+           quali=c(TRUE, TRUE),
+           mcomp="sk")
+  
+  sink()
+}
+
+three_way_anova <- function(dataframe, factors) {
+  # Applies three way anova to any three factors given in a list.
+  # The response variables are precision, recall and fscore. 
+  
+  sink("../results_dl/three_way.txt")
+  
+  cat(sprintf('\n\n====>>> TESTING: PRECISION =============== \n\n'))
+  fat3.dic(dataframe[, sprintf("%s", factors[1])], 
+           dataframe[, sprintf("%s", factors[2])], 
+           dataframe[, sprintf("%s", factors[3])], 
+           dataframe$precision, 
+           quali=c(TRUE, TRUE, TRUE), 
+           mcomp="sk") 
+  
+  cat(sprintf('\n\n====>>> TESTING: RECALL ================= \n\n'))
+  fat3.dic(dataframe[, sprintf("%s", factors[1])], 
+           dataframe[, sprintf("%s", factors[2])], 
+           dataframe[, sprintf("%s", factors[3])], 
+           dataframe$recall, 
+           quali=c(TRUE, TRUE, TRUE), 
+           mcomp="sk") 
+  
+  cat(sprintf('\n\n====>>> TESTING: FSCORE ================= \n\n'))
+  fat3.dic(dataframe[, sprintf("%s", factors[1])], 
+           dataframe[, sprintf("%s", factors[2])], 
+           dataframe[, sprintf("%s", factors[3])], 
+           dataframe$fscore, 
+           quali=c(TRUE, TRUE, TRUE), 
+           mcomp="sk") 
+  
+  sink()
+}
+
+# Apply anova according to the number of factors.
+if (length(factors) == 1){
+  one_way_anova(data, factors)
+} else if (length(factors) == 2) {
+  two_way_anova(data, factors)
+} else if (length(factors) == 3) {
+  three_way_anova(data, factors)
+} else {
+  print("Incorrect number of factors. Anova could not be applied.")
+}
+
 
