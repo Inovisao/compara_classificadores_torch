@@ -50,9 +50,8 @@ MODEL_HYPERPARAMETERS = {
     "NUM_EPOCHS": 5,
     "PATIENCE": 2,
     "TOLERANCE": 0.1,
-    "USE_TRANSFER_LEARNING": False,
+    "USE_TRANSFER_LEARNING": True,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
-    "EXPLAINERS": ["gradcam", "shap"], # Available: GradCAM, Occlusion, GuidedBackprop, SHAP
 }
 
 

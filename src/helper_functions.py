@@ -688,7 +688,7 @@ def test_siamese(test_dataloader, model, path_to_save_matrix_csv, path_to_save_m
                     save_confused_image(path_to_save_matrix_csv, images[i], filenames[i], labels_map[true_labels[i]], labels_map[predictions[i]])
 
     # Compute precision, recall, and F1 score
-    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(true_labels, predictions, average="macro")
+    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(true_labels, predictions, average="macro", zero_division=0)
 
     # Compute confusion matrix
     matrix = metrics.confusion_matrix(true_labels, predictions)
