@@ -63,6 +63,7 @@ for (i in seq(length(original_optim_name))) {
   data[data$optimizer == original_optim_name[i], c("optimizer")] <- optim_nickname[i]
 }
 
+
 ###########################################################
 # Create boxplots
 ###########################################################
@@ -91,26 +92,27 @@ for (lr in unique(data$learning_rate)) {
       print(sprintf("Metric: %s.", metric))
     
       # Create a string for the title.
-      TITLE = sprintf("Architectures X Optimizers, lr = %s: %s", format(lr, scientific=TRUE), metric)
-     
-      # Create the boxplot.
+      TITLE = sprintf("Boxplot for %s", metric)
+
       g <- ggplot(data_one_lr, aes_string(x="architecture", y=metric,fill="optimizer")) + 
-        geom_boxplot() + 
-        ylim(lower_limits[,metric] - 0.01, upper_limits[,metric] + 0.01) +
-        scale_fill_brewer(palette="Purples") +
-        labs(title=TITLE, x="Architectures", y=metric, fill="Optimizers") +
-        theme(plot.title=element_text(hjust = 0.5))
-     
+      geom_boxplot()+
+      ylim(lower_limits[,metric] - 0.01, upper_limits[,metric] + 0.01) +
+      scale_fill_brewer(palette="Purples")+
+      labs(title=TITLE,x="architecture", y = metric, fill ="optimizer")+
+      theme(legend.position="none")+
+      theme(plot.title = element_text(hjust = 0.5, size = 10))
+      
       # Append the boxplot to a list, to create the full image later.
       plots[[i]] <- g
       i = i + 1
   }
   
-  g <- grid.arrange(grobs=plots, ncol = 1)
-  ggsave(paste("../results_dl/boxplot", sub("0.", "_" ,sprintf("%f", lr)) ,".png", sep=""),g, width = 10, height = 8)
+  g <- grid.arrange(grobs=plots, ncol = 3)
+  ggsave(paste("/home/robertoneto/Documentos/experimentos_para_o_artigo/INS-CLAS-11C/results_dl/boxplot", sub("0.", "_" ,sprintf("%f", lr)) ,".png", sep=""),g, width = 12, height = 10/3)
   print(g)
   
 }
+
 
 
 ###########################################################
